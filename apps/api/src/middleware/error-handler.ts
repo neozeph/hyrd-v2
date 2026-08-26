@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
+import { logger } from "../config/logger.js";
 
 interface RequestSyntaxError extends SyntaxError {
   status?: number;
@@ -48,7 +49,12 @@ export const errorHandler: ErrorRequestHandler = (
     return;
   }
 
-  console.error(error);
+  logger.error(
+    {
+      error,
+    },
+    "Unhandled request error",
+  );
 
   response.status(500).json({
     error: "Internal server error",

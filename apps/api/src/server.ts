@@ -1,9 +1,15 @@
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { prisma } from "./lib/prisma.js";
+import { logger } from "./config/logger.js";
 
 const server = app.listen(env.PORT, () => {
-  console.log(`Hyrd API is running at http://localhost:${env.PORT}`);
+  logger.info(
+    {
+      port: env.PORT,
+    },
+    "Hyrd API is running",
+  );
 });
 
 let isShuttingDown = false;
@@ -15,7 +21,12 @@ async function shutdown(signal: string): Promise<void> {
 
   isShuttingDown = true;
 
-  console.log(`Received ${signal}. Shutting down.`);
+  logger.info(
+    {
+      signal,
+    },
+    "Shutting down Hyrd API",
+  );
 
   server.close(async (error) => {
     try {
@@ -25,10 +36,15 @@ async function shutdown(signal: string): Promise<void> {
 
       await prisma.$disconnect();
 
-      console.log("Hyrd API stopped cleanly.");
+      logger.info("Hyrd API stopped cleanly");
       process.exit(0);
     } catch (shutdownError: unknown) {
-      console.error("Failed to shut down cleanly:", shutdownError);
+      logger.error(
+        {
+          error: shutdownError,
+        },
+        "Failed to shut down cleanly",
+      );
 
       process.exit(1);
     }

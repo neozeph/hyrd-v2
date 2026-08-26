@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify API
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+
+        env:
+          POSTGRES_USER: hyrd
+          POSTGRES_PASSWORD: hyrd_dev_password
+          POSTGRES_DB: hyrd_test
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd "pg_isready -U hyrd -d hyrd_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      CLIENT_ORIGIN: http://localhost:5173
+      LOG_LEVEL: silent
+      DATABASE_URL: postgresql://hyrd:hyrd_dev_password@localhost:5432/hyrd_test?schema=public
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create test environment file
+        run: cp apps/api/.env.test.example apps/api/.env.test
+
+      - name: Apply database migrations
+        run: npm exec --workspace=@hyrd/api -- prisma migrate deploy
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
