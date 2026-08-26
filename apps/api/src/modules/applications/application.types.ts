@@ -1,24 +1,31 @@
-export type ApplicationStatus =
-  | "saved"
-  | "applied"
-  | "screening"
-  | "interview"
-  | "assessment"
-  | "offer"
-  | "rejected"
-  | "withdrawn";
+export const APPLICATION_STATUSES = [
+  "saved",
+  "applied",
+  "screening",
+  "interview",
+  "assessment",
+  "offer",
+  "rejected",
+  "withdrawn",
+] as const;
 
-export type UpdateApplicationInput = Partial<CreateApplicationInput>; // partial = makes props optional
+export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+
+export type UpdateApplicationInput = {
+  [Key in keyof CreateApplicationInput]?:
+    | CreateApplicationInput[Key]
+    | undefined;
+}; // partial = makes props optional
 
 export interface JobApplication {
   id: string;
   company: string;
   position: string;
   status: ApplicationStatus;
-  location?: string;
-  jobUrl?: string;
-  notes?: string;
-  appliedAt?: string;
+  location?: string | undefined;
+  jobUrl?: string | undefined;
+  notes?: string | undefined;
+  appliedAt?: string | undefined;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,9 +33,9 @@ export interface JobApplication {
 export interface CreateApplicationInput {
   company: string;
   position: string;
-  status?: ApplicationStatus;
-  location?: string;
-  jobUrl?: string;
-  notes?: string;
-  appliedAt?: string;
+  status?: ApplicationStatus | undefined;
+  location?: string | undefined;
+  jobUrl?: string | undefined;
+  notes?: string | undefined;
+  appliedAt?: string | undefined;
 }

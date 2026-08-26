@@ -224,4 +224,32 @@ describe("Applications API", () => {
       error: "Application not found",
     });
   });
+
+  it("rejects an empty update", async () => {
+    const createResponse = await request(app).post("/api/applications").send({
+      company: "IBM",
+      position: "Software Developer",
+    });
+
+    const applicationId = createResponse.body.id as string;
+
+    const response = await request(app)
+      .patch(`/api/applications/${applicationId}`)
+      .send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: "At least one field is required",
+    });
+  });
+
+  it("rejects unknown creation fields", async () => {
+    const response = await request(app).post("/api/applications").send({
+      company: "IBM",
+      position: "Software Developer",
+      unexpectedField: "not allowed",
+    });
+
+    expect(response.status).toBe(400);
+  });
 });
