@@ -15,7 +15,15 @@ describe("Applications API", () => {
     const response = await request(app).get("/api/applications");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual([]);
+    expect(response.body).toEqual({
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+      },
+    });
   });
 
   it("creates an application", async () => {
@@ -268,5 +276,84 @@ describe("Applications API", () => {
     expect(response.body).toEqual({
       error: "Application ID must be a valid UUID",
     });
+  });
+
+  it("searches applications by company or position", async () => {
+    await request(app).post("/api/applications").send({
+      company: "IBM Philippines",
+      position: "Technical Support Specialist",
+    });
+
+    await request(app).post("/api/applications").send({
+      company: "Acme Corporation",
+      position: "Data Analyst",
+    });
+
+    const response = await request(app).get("/api/applications?search=ibm");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0]).toEqual(
+      expect.objectContaining({
+        company: "IBM Philippines",
+      }),
+    );
+  });
+
+  it("filters applications by status", async () => {
+    await request(app).post("/api/applications").send({
+      company: "IBM",
+      position: "Developer",
+      status: "interview",
+    });
+
+    await request(app).post("/api/applications").send({
+      company: "Accenture",
+      position: "Associate Engineer",
+      status: "applied",
+    });
+
+    const response = await request(app).get(
+      "/api/applications?status=interview",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].status).toBe("interview");
+  });
+
+  it("paginates application results", async () => {
+    await request(app).post("/api/applications").send({
+      company: "Company One",
+      position: "Developer",
+    });
+
+    await request(app).post("/api/applications").send({
+      company: "Company Two",
+      position: "QA Tester",
+    });
+
+    await request(app).post("/api/applications").send({
+      company: "Company Three",
+      position: "Technical Support",
+    });
+
+    const response = await request(app).get("/api/applications?page=2&limit=2");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(1);
+
+    expect(response.body.pagination).toEqual({
+      page: 2,
+      limit: 2,
+      total: 3,
+      totalPages: 2,
+    });
+  });
+
+  it("rejects an excessive page limit", async () => {
+    const response = await request(app).get("/api/applications?limit=101");
+
+    expect(response.status).toBe(400);
   });
 });

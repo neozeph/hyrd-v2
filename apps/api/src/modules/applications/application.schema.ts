@@ -50,3 +50,30 @@ export const updateApplicationSchema = createApplicationSchema
   .refine((input) => Object.keys(input).length > 0, {
     message: "At least one field is required",
   });
+
+export const listApplicationsQuerySchema = z
+  .object({
+    status: z
+      .enum(APPLICATION_STATUSES, {
+        error: "Invalid application status",
+      })
+      .optional(),
+
+    search: z
+      .string()
+      .trim()
+      .min(1, "Search cannot be empty")
+      .max(100, "Search is too long")
+      .optional(),
+
+    sortBy: z.enum(["createdAt", "appliedAt", "company"]).default("createdAt"),
+
+    sortOrder: z.enum(["asc", "desc"]).default("desc"),
+
+    page: z.coerce.number().int().min(1).default(1),
+
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .strict();
+
+export type ListApplicationsQuery = z.infer<typeof listApplicationsQuerySchema>;

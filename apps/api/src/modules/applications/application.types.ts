@@ -39,3 +39,15 @@ export interface CreateApplicationInput {
   notes?: string | undefined;
   appliedAt?: string | undefined;
 }
+
+export interface ApplicationPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ApplicationListResult {
+  data: JobApplication[];
+  pagination: ApplicationPagination;
+}
