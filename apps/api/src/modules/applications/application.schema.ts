@@ -2,6 +2,12 @@ import { z } from "zod";
 
 import { APPLICATION_STATUSES } from "./application.types.js";
 
+export const applicationIdSchema = z
+  .string({
+    error: "Application ID must be a valid UUID",
+  })
+  .uuid("Application ID must be a valid UUID");
+
 export const createApplicationSchema = z
   .object({
     company: z

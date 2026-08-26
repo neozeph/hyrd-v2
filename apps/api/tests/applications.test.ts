@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { app } from "../src/app.js";
 import { resetApplications } from "../src/modules/applications/application.repository.js";
 
+const nonexistentApplicationId = "00000000-0000-4000-8000-000000000000";
+
 describe("Applications API", () => {
-  beforeEach(() => {
-    resetApplications();
+  beforeEach(async () => {
+    await resetApplications();
   });
 
   it("returns an empty application list", async () => {
@@ -155,7 +157,9 @@ describe("Applications API", () => {
   });
 
   it("returns 404 when retrieving an unknown application", async () => {
-    const response = await request(app).get("/api/applications/unknown-id");
+    const response = await request(app).get(
+      `/api/applications/${nonexistentApplicationId}`,
+    );
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
@@ -164,7 +168,9 @@ describe("Applications API", () => {
   });
 
   it("returns 404 when deleting an unknown application", async () => {
-    const response = await request(app).delete("/api/applications/unknown-id");
+    const response = await request(app).delete(
+      `/api/applications/${nonexistentApplicationId}`,
+    );
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
@@ -214,7 +220,7 @@ describe("Applications API", () => {
 
   it("returns 404 when updating an unknown application", async () => {
     const response = await request(app)
-      .patch("/api/applications/unknown-id")
+      .patch(`/api/applications/${nonexistentApplicationId}`)
       .send({
         status: "interview",
       });
@@ -251,5 +257,16 @@ describe("Applications API", () => {
     });
 
     expect(response.status).toBe(400);
+  });
+
+  it("rejects a malformed application ID", async () => {
+    const response = await request(app).get(
+      "/api/applications/not-a-valid-uuid",
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      error: "Application ID must be a valid UUID",
+    });
   });
 });

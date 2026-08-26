@@ -1,72 +1,108 @@
 import type {
+  CreateApplicationInput,
   JobApplication,
   UpdateApplicationInput,
 } from "./application.types.js";
 
-const applications: JobApplication[] = [];
+import { prisma } from "../../lib/prisma.js";
+import { toJobApplication } from "./application.mapper.js";
 
-export function getAllApplications(): JobApplication[] {
-  return applications;
+export async function getAllApplications(): Promise<JobApplication[]> {
+  const records = await prisma.jobApplication.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return records.map(toJobApplication);
 }
 
-export function addApplication(application: JobApplication): JobApplication {
-  applications.push(application);
+export async function addApplication(
+  input: CreateApplicationInput,
+): Promise<JobApplication> {
+  const record = await prisma.jobApplication.create({
+    data: {
+      company: input.company,
+      position: input.position,
+      status: input.status ?? "saved",
 
-  return application;
+      ...(input.location !== undefined ? { location: input.location } : {}),
+
+      ...(input.jobUrl !== undefined ? { jobUrl: input.jobUrl } : {}),
+
+      ...(input.notes !== undefined ? { notes: input.notes } : {}),
+
+      ...(input.appliedAt !== undefined
+        ? { appliedAt: new Date(input.appliedAt) }
+        : {}),
+    },
+  });
+
+  return toJobApplication(record);
 }
 
-export function findApplicationById(id: string): JobApplication | undefined {
-  return applications.find((application) => application.id === id);
+export async function findApplicationById(
+  id: string,
+): Promise<JobApplication | undefined> {
+  const record = await prisma.jobApplication.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  return record ? toJobApplication(record) : undefined;
 }
 
-export function updateApplicationById(
+export async function updateApplicationById(
   id: string,
   updates: UpdateApplicationInput,
-): JobApplication | undefined {
-  const applicationIndex = applications.findIndex(
-    (application) => application.id === id,
-  );
+): Promise<JobApplication | undefined> {
+  const existingRecord = await prisma.jobApplication.findUnique({
+    where: {
+      id,
+    },
+  });
 
-  if (applicationIndex === -1) {
+  if (!existingRecord) {
     return undefined;
   }
 
-  const existingApplication = applications[applicationIndex];
+  const updatedRecord = await prisma.jobApplication.update({
+    where: {
+      id,
+    },
+    data: {
+      ...(updates.company !== undefined ? { company: updates.company } : {}),
 
-  if (!existingApplication) {
-    return undefined;
-  }
+      ...(updates.position !== undefined ? { position: updates.position } : {}),
 
-  const updatedApplication: JobApplication = {
-    ...existingApplication,
-    ...updates,
-    id: existingApplication.id,
-    company: updates.company ?? existingApplication.company,
-    position: updates.position ?? existingApplication.position,
-    status: updates.status ?? existingApplication.status,
-    createdAt: existingApplication.createdAt,
-    updatedAt: new Date().toISOString(),
-  };
+      ...(updates.status !== undefined ? { status: updates.status } : {}),
 
-  applications[applicationIndex] = updatedApplication;
+      ...(updates.location !== undefined ? { location: updates.location } : {}),
 
-  return updatedApplication;
+      ...(updates.jobUrl !== undefined ? { jobUrl: updates.jobUrl } : {}),
+
+      ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
+
+      ...(updates.appliedAt !== undefined
+        ? { appliedAt: new Date(updates.appliedAt) }
+        : {}),
+    },
+  });
+
+  return toJobApplication(updatedRecord);
 }
 
-export function deleteApplicationById(id: string): boolean {
-  const applicationIndex = applications.findIndex(
-    (application) => application.id === id,
-  );
+export async function deleteApplicationById(id: string): Promise<boolean> {
+  const result = await prisma.jobApplication.deleteMany({
+    where: {
+      id,
+    },
+  });
 
-  if (applicationIndex === -1) {
-    return false;
-  }
-
-  applications.splice(applicationIndex, 1);
-
-  return true;
+  return result.count > 0;
 }
 
-export function resetApplications(): void {
-  applications.length = 0;
+export async function resetApplications(): Promise<void> {
+  await prisma.jobApplication.deleteMany();
 }

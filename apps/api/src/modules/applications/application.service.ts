@@ -11,39 +11,31 @@ import type {
   JobApplication,
   UpdateApplicationInput,
 } from "./application.types.js";
-import { randomUUID } from "node:crypto";
+// import { randomUUID } from "node:crypto";
 
-export function listApplications(): JobApplication[] {
+export async function listApplications(): Promise<JobApplication[]> {
   return getAllApplications();
 }
 
-export function createApplication(
+export async function createApplication(
   input: CreateApplicationInput,
-): JobApplication {
-  const timestamp = new Date().toISOString();
-
-  const application: JobApplication = {
-    ...input,
-    id: randomUUID(),
-    status: input.status ?? "saved",
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-
-  return addApplication(application);
+): Promise<JobApplication> {
+  return addApplication(input);
 }
 
-export function getApplicationById(id: string): JobApplication | undefined {
+export async function getApplicationById(
+  id: string,
+): Promise<JobApplication | undefined> {
   return findApplicationById(id);
 }
 
-export function updateApplication(
+export async function updateApplication(
   id: string,
   input: UpdateApplicationInput,
-): JobApplication | undefined {
+): Promise<JobApplication | undefined> {
   return updateApplicationById(id, input);
 }
 
-export function deleteApplication(id: string): boolean {
+export async function deleteApplication(id: string): Promise<boolean> {
   return deleteApplicationById(id);
 }
