@@ -1,0 +1,35 @@
+{
+  "name": "hyrd-v2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A personal job-application tracker built with TypeScript.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@hyrd/api",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neozeph/hyrd-v2.git"
+  },
+  "keywords": [
+    "job-tracker",
+    "typescript",
+    "react",
+    "express"
+  ],
+  "author": "Josef Alanrey F. Soriente",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/neozeph/hyrd-v2/issues"
+  },
+  "homepage": "https://github.com/neozeph/hyrd-v2#readme"
+}
