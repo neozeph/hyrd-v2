@@ -14,4 +14,20 @@ describe("GET /api/health", () => {
       service: "hyrd-api",
     });
   });
+
+  it("returns security and CORS headers", async () => {
+    const response = await request(app)
+      .get("/api/health")
+      .set("Origin", "http://localhost:5173");
+
+    expect(response.status).toBe(200);
+
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
+
+    expect(response.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:5173",
+    );
+
+    expect(response.headers["access-control-allow-credentials"]).toBe("true");
+  });
 });

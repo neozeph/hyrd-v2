@@ -6,6 +6,11 @@ interface RequestSyntaxError extends SyntaxError {
   body?: unknown;
 }
 
+interface HttpRequestError extends Error {
+  status?: number;
+  type?: string;
+}
+
 export const errorHandler: ErrorRequestHandler = (
   error,
   _request,
@@ -30,6 +35,15 @@ export const errorHandler: ErrorRequestHandler = (
   ) {
     response.status(400).json({
       error: "Invalid JSON",
+    });
+    return;
+  }
+
+  const httpError = error as HttpRequestError;
+
+  if (httpError.status === 413) {
+    response.status(413).json({
+      error: "Request body is too large",
     });
     return;
   }

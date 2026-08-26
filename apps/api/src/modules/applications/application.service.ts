@@ -6,15 +6,20 @@ import {
   deleteApplicationById,
 } from "./application.repository.js";
 
+import type { ListApplicationsQuery } from "./application.schema.js";
+
 import type {
+  ApplicationListResult,
   CreateApplicationInput,
   JobApplication,
   UpdateApplicationInput,
 } from "./application.types.js";
 // import { randomUUID } from "node:crypto";
 
-export async function listApplications(): Promise<JobApplication[]> {
-  return getAllApplications();
+export async function listApplications(
+  query: ListApplicationsQuery,
+): Promise<ApplicationListResult> {
+  return getAllApplications(query);
 }
 
 export async function createApplication(

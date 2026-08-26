@@ -3,6 +3,7 @@ import {
   applicationIdSchema,
   createApplicationSchema,
   updateApplicationSchema,
+  listApplicationsQuerySchema,
 } from "./application.schema.js";
 
 import {
@@ -14,12 +15,14 @@ import {
 } from "./application.service.js";
 
 export async function getApplications(
-  _request: Request,
+  request: Request,
   response: Response,
 ): Promise<void> {
-  const applications = await listApplications();
+  const query = listApplicationsQuerySchema.parse(request.query);
 
-  response.status(200).json(applications);
+  const result = await listApplications(query);
+
+  response.status(200).json(result);
 }
 
 export async function postApplication(

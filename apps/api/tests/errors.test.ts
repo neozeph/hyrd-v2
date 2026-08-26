@@ -24,4 +24,19 @@ describe("API error handling", () => {
       error: "Invalid JSON",
     });
   });
+
+  it("rejects an oversized JSON request", async () => {
+    const response = await request(app)
+      .post("/api/applications")
+      .send({
+        company: "IBM",
+        position: "Developer",
+        notes: "a".repeat(110 * 1024),
+      });
+
+    expect(response.status).toBe(413);
+    expect(response.body).toEqual({
+      error: "Request body is too large",
+    });
+  });
 });

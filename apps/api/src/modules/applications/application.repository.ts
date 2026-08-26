@@ -1,4 +1,5 @@
 import type {
+  ApplicationListResult,
   CreateApplicationInput,
   JobApplication,
   UpdateApplicationInput,
@@ -6,15 +7,81 @@ import type {
 
 import { prisma } from "../../lib/prisma.js";
 import { toJobApplication } from "./application.mapper.js";
+import type { Prisma } from "../../generated/prisma/client.js";
 
-export async function getAllApplications(): Promise<JobApplication[]> {
-  const records = await prisma.jobApplication.findMany({
-    orderBy: {
-      createdAt: "desc",
+import type { ListApplicationsQuery } from "./application.schema.js";
+
+export async function getAllApplications(
+  query: ListApplicationsQuery,
+): Promise<ApplicationListResult> {
+  const { status, search, sortBy, sortOrder, page, limit } = query;
+
+  const where: Prisma.JobApplicationWhereInput = {
+    ...(status !== undefined ? { status } : {}),
+
+    ...(search !== undefined
+      ? {
+          OR: [
+            {
+              company: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+            {
+              position: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  let orderBy: Prisma.JobApplicationOrderByWithRelationInput;
+
+  switch (sortBy) {
+    case "company":
+      orderBy = {
+        company: sortOrder,
+      };
+      break;
+
+    case "appliedAt":
+      orderBy = {
+        appliedAt: sortOrder,
+      };
+      break;
+
+    default:
+      orderBy = {
+        createdAt: sortOrder,
+      };
+  }
+
+  const [records, total] = await prisma.$transaction([
+    prisma.jobApplication.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+
+    prisma.jobApplication.count({
+      where,
+    }),
+  ]);
+
+  return {
+    data: records.map(toJobApplication),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     },
-  });
-
-  return records.map(toJobApplication);
+  };
 }
 
 export async function addApplication(
