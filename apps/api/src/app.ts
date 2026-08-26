@@ -1,4 +1,6 @@
 import express from "express";
+import { errorHandler } from "./middleware/error-handler.js";
+import { notFoundHandler } from "./middleware/not-found.js";
 import { applicationRouter } from "./modules/applications/application.routes.js";
 
 export const app = express();
@@ -14,3 +16,6 @@ app.get("/api/health", (_request, response) => {
     service: "hyrd-api",
   });
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);

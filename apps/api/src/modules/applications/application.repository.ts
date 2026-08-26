@@ -41,6 +41,9 @@ export function updateApplicationById(
     ...existingApplication,
     ...updates,
     id: existingApplication.id,
+    company: updates.company ?? existingApplication.company,
+    position: updates.position ?? existingApplication.position,
+    status: updates.status ?? existingApplication.status,
     createdAt: existingApplication.createdAt,
     updatedAt: new Date().toISOString(),
   };
