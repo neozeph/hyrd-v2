@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import {
+  applicationIdSchema,
   createApplicationSchema,
   updateApplicationSchema,
 } from "./application.schema.js";
@@ -12,32 +13,32 @@ import {
   updateApplication,
 } from "./application.service.js";
 
-export function getApplications(_request: Request, response: Response): void {
-  const applications = listApplications();
+export async function getApplications(
+  _request: Request,
+  response: Response,
+): Promise<void> {
+  const applications = await listApplications();
 
   response.status(200).json(applications);
 }
 
-export function postApplication(request: Request, response: Response): void {
+export async function postApplication(
+  request: Request,
+  response: Response,
+): Promise<void> {
   const input = createApplicationSchema.parse(request.body);
 
-  const application = createApplication(input);
+  const application = await createApplication(input);
 
   response.status(201).json(application);
 }
 
-export function getApplication(request: Request, response: Response): void {
-  const id = request.params.id;
-
-  if (typeof id !== "string" || id.trim() === "") {
-    // type narrowing
-    response.status(400).json({
-      error: "Application ID is required",
-    });
-    return;
-  }
-
-  const application = getApplicationById(id);
+export async function getApplication(
+  request: Request,
+  response: Response,
+): Promise<void> {
+  const id = applicationIdSchema.parse(request.params.id);
+  const application = await getApplicationById(id);
 
   if (!application) {
     response.status(404).json({
@@ -49,19 +50,15 @@ export function getApplication(request: Request, response: Response): void {
   response.status(200).json(application);
 }
 
-export function patchApplication(request: Request, response: Response): void {
-  const id = request.params.id;
-
-  if (typeof id !== "string" || id.trim() === "") {
-    response.status(400).json({
-      error: "Application ID is required",
-    });
-    return;
-  }
+export async function patchApplication(
+  request: Request,
+  response: Response,
+): Promise<void> {
+  const id = applicationIdSchema.parse(request.params.id);
 
   const input = updateApplicationSchema.parse(request.body);
 
-  const application = updateApplication(id, input);
+  const application = await updateApplication(id, input);
 
   if (!application) {
     response.status(404).json({
@@ -73,17 +70,13 @@ export function patchApplication(request: Request, response: Response): void {
   response.status(200).json(application);
 }
 
-export function removeApplication(request: Request, response: Response): void {
-  const id = request.params.id;
+export async function removeApplication(
+  request: Request,
+  response: Response,
+): Promise<void> {
+  const id = applicationIdSchema.parse(request.params.id);
 
-  if (typeof id !== "string" || id.trim() === "") {
-    response.status(400).json({
-      error: "Application ID is required",
-    });
-    return;
-  }
-
-  const wasDeleted = deleteApplication(id);
+  const wasDeleted = await deleteApplication(id);
 
   if (!wasDeleted) {
     response.status(404).json({
