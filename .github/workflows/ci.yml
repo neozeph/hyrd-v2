@@ -59,7 +59,7 @@ jobs:
         run: npm ci
 
       - name: Create test environment file
-        run: cp apps/api/.env.test.example apps/api/.env.test
+        run: touch apps/api/.env.test
 
       - name: Apply database migrations
         run: npm exec --workspace=@hyrd/api -- prisma migrate deploy
