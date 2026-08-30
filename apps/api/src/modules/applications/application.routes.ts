@@ -1,5 +1,7 @@
 import { Router } from "express";
 
+import { requireAuthentication } from "../auth/auth.middleware.js";
+
 import {
   getApplication,
   getApplications,
@@ -9,6 +11,8 @@ import {
 } from "./application.controller.js";
 
 export const applicationRouter = Router();
+
+applicationRouter.use(requireAuthentication);
 
 applicationRouter.get("/:id", getApplication);
 applicationRouter.get("/", getApplications);

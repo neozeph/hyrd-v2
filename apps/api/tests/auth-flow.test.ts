@@ -1,0 +1,133 @@
+import request from "supertest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { app } from "../src/app.js";
+import { prisma } from "../src/lib/prisma.js";
+
+const TEST_EMAIL = "auth-test@hyrd.dev";
+const TEST_PASSWORD = "StrongPassword123!";
+
+async function removeTestUser() {
+  await prisma.user.deleteMany({
+    where: {
+      email: TEST_EMAIL,
+    },
+  });
+}
+
+describe("authentication API", () => {
+  beforeEach(async () => {
+    await removeTestUser();
+  });
+
+  afterEach(async () => {
+    await removeTestUser();
+  });
+
+  it("registers and authenticates a user", async () => {
+    const agent = request.agent(app);
+
+    const registrationResponse = await agent.post("/api/auth/register").send({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    });
+
+    expect(registrationResponse.status).toBe(201);
+
+    expect(registrationResponse.body.user).toMatchObject({
+      email: TEST_EMAIL,
+    });
+
+    expect(registrationResponse.body.user).not.toHaveProperty("passwordHash");
+
+    expect(registrationResponse.body).not.toHaveProperty("sessionToken");
+
+    const setCookieHeader = registrationResponse.headers["set-cookie"];
+
+    expect(setCookieHeader?.[0]).toContain("hyrd_session=");
+
+    expect(setCookieHeader?.[0]).toContain("HttpOnly");
+
+    const currentUserResponse = await agent.get("/api/auth/me");
+
+    expect(currentUserResponse.status).toBe(200);
+
+    expect(currentUserResponse.body.user).toMatchObject({
+      email: TEST_EMAIL,
+    });
+  });
+
+  it("rejects duplicate registration", async () => {
+    const firstAgent = request.agent(app);
+    const secondAgent = request.agent(app);
+
+    const firstResponse = await firstAgent.post("/api/auth/register").send({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    });
+
+    expect(firstResponse.status).toBe(201);
+
+    const duplicateResponse = await secondAgent
+      .post("/api/auth/register")
+      .send({
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+      });
+
+    expect(duplicateResponse.status).toBe(409);
+
+    expect(duplicateResponse.body).toMatchObject({
+      code: "EMAIL_ALREADY_REGISTERED",
+    });
+  });
+
+  it("rejects invalid login credentials", async () => {
+    const response = await request(app).post("/api/auth/login").send({
+      email: TEST_EMAIL,
+      password: "IncorrectPassword123!",
+    });
+
+    expect(response.status).toBe(401);
+
+    expect(response.body).toMatchObject({
+      code: "INVALID_CREDENTIALS",
+      error: "Invalid email or password",
+    });
+  });
+
+  it("logs in, logs out, and invalidates the session", async () => {
+    const registrationAgent = request.agent(app);
+
+    await registrationAgent
+      .post("/api/auth/register")
+      .send({
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+      })
+      .expect(201);
+
+    await registrationAgent.post("/api/auth/logout").expect(204);
+
+    const agent = request.agent(app);
+
+    const loginResponse = await agent.post("/api/auth/login").send({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+    });
+
+    expect(loginResponse.status).toBe(200);
+
+    await agent.get("/api/auth/me").expect(200);
+
+    const logoutResponse = await agent.post("/api/auth/logout");
+
+    expect(logoutResponse.status).toBe(204);
+
+    expect(logoutResponse.headers["set-cookie"]?.[0]).toContain(
+      "hyrd_session=;",
+    );
+
+    await agent.get("/api/auth/me").expect(401);
+  });
+});

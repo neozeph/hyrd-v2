@@ -12,11 +12,14 @@ import type { Prisma } from "../../generated/prisma/client.js";
 import type { ListApplicationsQuery } from "./application.schema.js";
 
 export async function getAllApplications(
+  userId: string,
   query: ListApplicationsQuery,
 ): Promise<ApplicationListResult> {
   const { status, search, sortBy, sortOrder, page, limit } = query;
 
   const where: Prisma.JobApplicationWhereInput = {
+    userId,
+
     ...(status !== undefined ? { status } : {}),
 
     ...(search !== undefined
@@ -85,10 +88,12 @@ export async function getAllApplications(
 }
 
 export async function addApplication(
+  userId: string,
   input: CreateApplicationInput,
 ): Promise<JobApplication> {
   const record = await prisma.jobApplication.create({
     data: {
+      userId,
       company: input.company,
       position: input.position,
       status: input.status ?? "saved",
@@ -109,11 +114,13 @@ export async function addApplication(
 }
 
 export async function findApplicationById(
+  userId: string,
   id: string,
 ): Promise<JobApplication | undefined> {
-  const record = await prisma.jobApplication.findUnique({
+  const record = await prisma.jobApplication.findFirst({
     where: {
       id,
+      userId,
     },
   });
 
@@ -121,23 +128,16 @@ export async function findApplicationById(
 }
 
 export async function updateApplicationById(
+  userId: string,
   id: string,
   updates: UpdateApplicationInput,
 ): Promise<JobApplication | undefined> {
-  const existingRecord = await prisma.jobApplication.findUnique({
+  const result = await prisma.jobApplication.updateMany({
     where: {
       id,
+      userId,
     },
-  });
 
-  if (!existingRecord) {
-    return undefined;
-  }
-
-  const updatedRecord = await prisma.jobApplication.update({
-    where: {
-      id,
-    },
     data: {
       ...(updates.company !== undefined ? { company: updates.company } : {}),
 
@@ -152,18 +152,35 @@ export async function updateApplicationById(
       ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
 
       ...(updates.appliedAt !== undefined
-        ? { appliedAt: new Date(updates.appliedAt) }
+        ? {
+            appliedAt: new Date(updates.appliedAt),
+          }
         : {}),
     },
   });
 
-  return toJobApplication(updatedRecord);
+  if (result.count === 0) {
+    return undefined;
+  }
+
+  const updatedRecord = await prisma.jobApplication.findFirst({
+    where: {
+      id,
+      userId,
+    },
+  });
+
+  return updatedRecord ? toJobApplication(updatedRecord) : undefined;
 }
 
-export async function deleteApplicationById(id: string): Promise<boolean> {
+export async function deleteApplicationById(
+  userId: string,
+  id: string,
+): Promise<boolean> {
   const result = await prisma.jobApplication.deleteMany({
     where: {
       id,
+      userId,
     },
   });
 

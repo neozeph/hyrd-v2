@@ -1,9 +1,9 @@
 import {
   addApplication,
+  deleteApplicationById,
   findApplicationById,
   getAllApplications,
   updateApplicationById,
-  deleteApplicationById,
 } from "./application.repository.js";
 
 import type { ListApplicationsQuery } from "./application.schema.js";
@@ -14,33 +14,39 @@ import type {
   JobApplication,
   UpdateApplicationInput,
 } from "./application.types.js";
-// import { randomUUID } from "node:crypto";
 
 export async function listApplications(
+  userId: string,
   query: ListApplicationsQuery,
 ): Promise<ApplicationListResult> {
-  return getAllApplications(query);
+  return getAllApplications(userId, query);
 }
 
 export async function createApplication(
+  userId: string,
   input: CreateApplicationInput,
 ): Promise<JobApplication> {
-  return addApplication(input);
+  return addApplication(userId, input);
 }
 
 export async function getApplicationById(
+  userId: string,
   id: string,
 ): Promise<JobApplication | undefined> {
-  return findApplicationById(id);
+  return findApplicationById(userId, id);
 }
 
 export async function updateApplication(
+  userId: string,
   id: string,
   input: UpdateApplicationInput,
 ): Promise<JobApplication | undefined> {
-  return updateApplicationById(id, input);
+  return updateApplicationById(userId, id, input);
 }
 
-export async function deleteApplication(id: string): Promise<boolean> {
-  return deleteApplicationById(id);
+export async function deleteApplication(
+  userId: string,
+  id: string,
+): Promise<boolean> {
+  return deleteApplicationById(userId, id);
 }

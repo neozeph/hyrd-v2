@@ -29,8 +29,34 @@ model JobApplication {
   appliedAt DateTime?         @map("applied_at") @db.Timestamptz(3)
   createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  userId    String            @db.Uuid
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([appliedAt])
+  @@index([userId])
   @@map("job_applications")
+}
+
+model User {
+  id           String           @id @default(uuid()) @db.Uuid
+  email        String           @unique
+  passwordHash String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  sessions     Session[]
+  applications JobApplication[]
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
