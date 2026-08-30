@@ -2,6 +2,7 @@ import express, { type RequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
+import cookieParser from "cookie-parser";
 
 import { env } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
@@ -9,6 +10,7 @@ import { notFoundHandler } from "./middleware/not-found.js";
 import { applicationRouter } from "./modules/applications/application.routes.js";
 import { httpLogger } from "./config/logger.js";
 import { openApiDocument } from "./docs/openapi.js";
+import { authRouter } from "./modules/auth/auth.routes.js";
 
 export const app = express();
 
@@ -28,8 +30,10 @@ app.use(
     limit: "100kb",
   }),
 );
+app.use(cookieParser());
 
 app.use("/api/applications", applicationRouter);
+app.use("/api/auth", authRouter);
 
 app.get("/api/health", (_request, response) => {
   response.status(200).json({

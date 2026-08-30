@@ -1,18 +1,66 @@
 import request from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
-
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { prisma } from "../src/lib/prisma.js";
 import { app } from "../src/app.js";
 import { resetApplications } from "../src/modules/applications/application.repository.js";
 
 const nonexistentApplicationId = "00000000-0000-4000-8000-000000000000";
 
+const TEST_EMAIL = "applications-test@hyrd.dev";
+
+const SECOND_USER_EMAIL = "applications-isolation-test@hyrd.dev";
+
+const TEST_PASSWORD = "StrongPassword123!";
+
+let agent: ReturnType<typeof request.agent>;
+
+async function removeTestUsers() {
+  await prisma.user.deleteMany({
+    where: {
+      email: {
+        in: [TEST_EMAIL, SECOND_USER_EMAIL],
+      },
+    },
+  });
+}
+
 describe("Applications API", () => {
+  beforeAll(async () => {
+    await resetApplications();
+    await removeTestUsers();
+
+    agent = request.agent(app);
+
+    await agent
+      .post("/api/auth/register")
+      .send({
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+      })
+      .expect(201);
+  });
+
   beforeEach(async () => {
     await resetApplications();
   });
 
-  it("returns an empty application list", async () => {
+  afterAll(async () => {
+    await resetApplications();
+    await removeTestUsers();
+  });
+
+  it("rejects unauthenticated requests", async () => {
     const response = await request(app).get("/api/applications");
+
+    expect(response.status).toBe(401);
+
+    expect(response.body).toEqual({
+      error: "Authentication required",
+    });
+  });
+
+  it("returns an empty application list", async () => {
+    const response = await agent.get("/api/applications");
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -27,7 +75,7 @@ describe("Applications API", () => {
   });
 
   it("creates an application", async () => {
-    const response = await request(app).post("/api/applications").send({
+    const response = await agent.post("/api/applications").send({
       company: "IBM",
       position: "Consulting Associate",
       status: "applied",
@@ -48,7 +96,7 @@ describe("Applications API", () => {
   });
 
   it("rejects an empty company", async () => {
-    const response = await request(app).post("/api/applications").send({
+    const response = await agent.post("/api/applications").send({
       company: "",
       position: "Software Developer",
     });
@@ -60,7 +108,7 @@ describe("Applications API", () => {
   });
 
   it("rejects an invalid status", async () => {
-    const response = await request(app).post("/api/applications").send({
+    const response = await agent.post("/api/applications").send({
       company: "Example Company",
       position: "QA Tester",
       status: "pending",
@@ -73,16 +121,14 @@ describe("Applications API", () => {
   });
 
   it("retrieves an application by ID", async () => {
-    const createResponse = await request(app).post("/api/applications").send({
+    const createResponse = await agent.post("/api/applications").send({
       company: "Accenture",
       position: "Associate Software Engineer",
     });
 
     const applicationId = createResponse.body.id as string;
 
-    const response = await request(app).get(
-      `/api/applications/${applicationId}`,
-    );
+    const response = await agent.get(`/api/applications/${applicationId}`);
 
     expect(response.status).toBe(200);
 
@@ -97,7 +143,7 @@ describe("Applications API", () => {
   });
 
   it("updates an existing application", async () => {
-    const createResponse = await request(app).post("/api/applications").send({
+    const createResponse = await agent.post("/api/applications").send({
       company: "PathBuilder",
       position: "QA Analyst",
       status: "applied",
@@ -106,7 +152,7 @@ describe("Applications API", () => {
     const applicationId = createResponse.body.id as string;
     const originalCreatedAt = createResponse.body.createdAt as string;
 
-    const response = await request(app)
+    const response = await agent
       .patch(`/api/applications/${applicationId}`)
       .send({
         status: "interview",
@@ -129,23 +175,21 @@ describe("Applications API", () => {
   });
 
   it("deletes an existing application", async () => {
-    const createResponse = await request(app).post("/api/applications").send({
+    const createResponse = await agent.post("/api/applications").send({
       company: "IBM",
       position: "Technical Support Specialist",
     });
 
     const applicationId = createResponse.body.id as string;
 
-    const deleteResponse = await request(app).delete(
+    const deleteResponse = await agent.delete(
       `/api/applications/${applicationId}`,
     );
 
     expect(deleteResponse.status).toBe(204);
     expect(deleteResponse.text).toBe("");
 
-    const getResponse = await request(app).get(
-      `/api/applications/${applicationId}`,
-    );
+    const getResponse = await agent.get(`/api/applications/${applicationId}`);
 
     expect(getResponse.status).toBe(404);
     expect(getResponse.body).toEqual({
@@ -154,7 +198,7 @@ describe("Applications API", () => {
   });
 
   it("rejects a missing position", async () => {
-    const response = await request(app).post("/api/applications").send({
+    const response = await agent.post("/api/applications").send({
       company: "IBM",
     });
 
@@ -165,7 +209,7 @@ describe("Applications API", () => {
   });
 
   it("returns 404 when retrieving an unknown application", async () => {
-    const response = await request(app).get(
+    const response = await agent.get(
       `/api/applications/${nonexistentApplicationId}`,
     );
 
@@ -176,7 +220,7 @@ describe("Applications API", () => {
   });
 
   it("returns 404 when deleting an unknown application", async () => {
-    const response = await request(app).delete(
+    const response = await agent.delete(
       `/api/applications/${nonexistentApplicationId}`,
     );
 
@@ -187,14 +231,14 @@ describe("Applications API", () => {
   });
 
   it("rejects an empty company update", async () => {
-    const createResponse = await request(app).post("/api/applications").send({
+    const createResponse = await agent.post("/api/applications").send({
       company: "IBM",
       position: "Software Developer",
     });
 
     const applicationId = createResponse.body.id as string;
 
-    const response = await request(app)
+    const response = await agent
       .patch(`/api/applications/${applicationId}`)
       .send({
         company: "",
@@ -207,14 +251,14 @@ describe("Applications API", () => {
   });
 
   it("rejects an invalid status update", async () => {
-    const createResponse = await request(app).post("/api/applications").send({
+    const createResponse = await agent.post("/api/applications").send({
       company: "IBM",
       position: "Software Developer",
     });
 
     const applicationId = createResponse.body.id as string;
 
-    const response = await request(app)
+    const response = await agent
       .patch(`/api/applications/${applicationId}`)
       .send({
         status: "pending",
@@ -227,7 +271,7 @@ describe("Applications API", () => {
   });
 
   it("returns 404 when updating an unknown application", async () => {
-    const response = await request(app)
+    const response = await agent
       .patch(`/api/applications/${nonexistentApplicationId}`)
       .send({
         status: "interview",
@@ -240,14 +284,14 @@ describe("Applications API", () => {
   });
 
   it("rejects an empty update", async () => {
-    const createResponse = await request(app).post("/api/applications").send({
+    const createResponse = await agent.post("/api/applications").send({
       company: "IBM",
       position: "Software Developer",
     });
 
     const applicationId = createResponse.body.id as string;
 
-    const response = await request(app)
+    const response = await agent
       .patch(`/api/applications/${applicationId}`)
       .send({});
 
@@ -258,7 +302,7 @@ describe("Applications API", () => {
   });
 
   it("rejects unknown creation fields", async () => {
-    const response = await request(app).post("/api/applications").send({
+    const response = await agent.post("/api/applications").send({
       company: "IBM",
       position: "Software Developer",
       unexpectedField: "not allowed",
@@ -268,9 +312,7 @@ describe("Applications API", () => {
   });
 
   it("rejects a malformed application ID", async () => {
-    const response = await request(app).get(
-      "/api/applications/not-a-valid-uuid",
-    );
+    const response = await agent.get("/api/applications/not-a-valid-uuid");
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -279,17 +321,17 @@ describe("Applications API", () => {
   });
 
   it("searches applications by company or position", async () => {
-    await request(app).post("/api/applications").send({
+    await agent.post("/api/applications").send({
       company: "IBM Philippines",
       position: "Technical Support Specialist",
     });
 
-    await request(app).post("/api/applications").send({
+    await agent.post("/api/applications").send({
       company: "Acme Corporation",
       position: "Data Analyst",
     });
 
-    const response = await request(app).get("/api/applications?search=ibm");
+    const response = await agent.get("/api/applications?search=ibm");
 
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(1);
@@ -301,21 +343,19 @@ describe("Applications API", () => {
   });
 
   it("filters applications by status", async () => {
-    await request(app).post("/api/applications").send({
+    await agent.post("/api/applications").send({
       company: "IBM",
       position: "Developer",
       status: "interview",
     });
 
-    await request(app).post("/api/applications").send({
+    await agent.post("/api/applications").send({
       company: "Accenture",
       position: "Associate Engineer",
       status: "applied",
     });
 
-    const response = await request(app).get(
-      "/api/applications?status=interview",
-    );
+    const response = await agent.get("/api/applications?status=interview");
 
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(1);
@@ -323,22 +363,22 @@ describe("Applications API", () => {
   });
 
   it("paginates application results", async () => {
-    await request(app).post("/api/applications").send({
+    await agent.post("/api/applications").send({
       company: "Company One",
       position: "Developer",
     });
 
-    await request(app).post("/api/applications").send({
+    await agent.post("/api/applications").send({
       company: "Company Two",
       position: "QA Tester",
     });
 
-    await request(app).post("/api/applications").send({
+    await agent.post("/api/applications").send({
       company: "Company Three",
       position: "Technical Support",
     });
 
-    const response = await request(app).get("/api/applications?page=2&limit=2");
+    const response = await agent.get("/api/applications?page=2&limit=2");
 
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(1);
@@ -352,8 +392,57 @@ describe("Applications API", () => {
   });
 
   it("rejects an excessive page limit", async () => {
-    const response = await request(app).get("/api/applications?limit=101");
+    const response = await agent.get("/api/applications?limit=101");
 
     expect(response.status).toBe(400);
+  });
+
+  it("prevents users from accessing another user's application", async () => {
+    const secondAgent = request.agent(app);
+
+    await secondAgent
+      .post("/api/auth/register")
+      .send({
+        email: SECOND_USER_EMAIL,
+        password: TEST_PASSWORD,
+      })
+      .expect(201);
+
+    const createResponse = await secondAgent.post("/api/applications").send({
+      company: "Private Company",
+      position: "Private Position",
+    });
+
+    expect(createResponse.status).toBe(201);
+
+    const applicationId = createResponse.body.id as string;
+
+    const firstUserList = await agent.get("/api/applications");
+
+    expect(firstUserList.status).toBe(200);
+    expect(firstUserList.body.data).toEqual([]);
+
+    await agent.get(`/api/applications/${applicationId}`).expect(404);
+
+    await agent
+      .patch(`/api/applications/${applicationId}`)
+      .send({
+        status: "interview",
+      })
+      .expect(404);
+
+    await agent.delete(`/api/applications/${applicationId}`).expect(404);
+
+    const ownerResponse = await secondAgent.get(
+      `/api/applications/${applicationId}`,
+    );
+
+    expect(ownerResponse.status).toBe(200);
+
+    expect(ownerResponse.body).toMatchObject({
+      id: applicationId,
+      company: "Private Company",
+      position: "Private Position",
+    });
   });
 });

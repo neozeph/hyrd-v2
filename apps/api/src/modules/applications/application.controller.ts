@@ -14,13 +14,24 @@ import {
   updateApplication,
 } from "./application.service.js";
 
+function getAuthenticatedUserId(request: Request): string {
+  const userId = request.authUser?.id;
+
+  if (userId === undefined) {
+    throw new Error("Authenticated user missing from request");
+  }
+
+  return userId;
+}
+
 export async function getApplications(
   request: Request,
   response: Response,
 ): Promise<void> {
   const query = listApplicationsQuerySchema.parse(request.query);
 
-  const result = await listApplications(query);
+  const userId = getAuthenticatedUserId(request);
+  const result = await listApplications(userId, query);
 
   response.status(200).json(result);
 }
@@ -31,7 +42,8 @@ export async function postApplication(
 ): Promise<void> {
   const input = createApplicationSchema.parse(request.body);
 
-  const application = await createApplication(input);
+  const userId = getAuthenticatedUserId(request);
+  const application = await createApplication(userId, input);
 
   response.status(201).json(application);
 }
@@ -41,7 +53,8 @@ export async function getApplication(
   response: Response,
 ): Promise<void> {
   const id = applicationIdSchema.parse(request.params.id);
-  const application = await getApplicationById(id);
+  const userId = getAuthenticatedUserId(request);
+  const application = await getApplicationById(userId, id);
 
   if (!application) {
     response.status(404).json({
@@ -61,7 +74,8 @@ export async function patchApplication(
 
   const input = updateApplicationSchema.parse(request.body);
 
-  const application = await updateApplication(id, input);
+  const userId = getAuthenticatedUserId(request);
+  const application = await updateApplication(userId, id, input);
 
   if (!application) {
     response.status(404).json({
@@ -79,7 +93,8 @@ export async function removeApplication(
 ): Promise<void> {
   const id = applicationIdSchema.parse(request.params.id);
 
-  const wasDeleted = await deleteApplication(id);
+  const userId = getAuthenticatedUserId(request);
+  const wasDeleted = await deleteApplication(userId, id);
 
   if (!wasDeleted) {
     response.status(404).json({
