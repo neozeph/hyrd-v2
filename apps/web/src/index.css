@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+  --color-hyrd-navy: #17233c;
+  --color-hyrd-deep: #101a2e;
+  --color-hyrd-gold: #b28a4a;
+  --color-hyrd-gold-dark: #96723b;
+  --color-hyrd-page: #f5f6f8;
+  --color-hyrd-surface: #ffffff;
+  --color-hyrd-text: #18202f;
+  --color-hyrd-muted: #667085;
+  --color-hyrd-border: #e2e6ec;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--color-hyrd-page);
+  color: var(--color-hyrd-text);
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
