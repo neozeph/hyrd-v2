@@ -1,21 +1,27 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { useNavigate } from "react-router";
 
+import { useAuth } from "../auth/use-auth";
 import { AuthField } from "../components/auth/auth-field";
 import { AuthShell } from "../components/auth/auth-shell";
+import { ApiError } from "../lib/api-error";
 
 type RegisterErrors = Partial<
   Record<"name" | "email" | "password" | "confirmPassword" | "form", string>
 >;
 
 export function RegisterPage() {
+  const { register } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<RegisterErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const nextErrors: RegisterErrors = {};
@@ -30,15 +36,36 @@ export function RegisterPage() {
     } else if (password !== confirmPassword) {
       nextErrors.confirmPassword = "Passwords do not match.";
     }
-    if (
-      !nextErrors.name &&
-      !nextErrors.email &&
-      !nextErrors.password &&
-      !nextErrors.confirmPassword
-    ) {
-      nextErrors.form = "Account creation will connect to the API later.";
-    }
     setErrors(nextErrors);
+
+    if (
+      nextErrors.name ||
+      nextErrors.email ||
+      nextErrors.password ||
+      nextErrors.confirmPassword
+    ) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await register({ email, name: name.trim(), password });
+      setPassword("");
+      setConfirmPassword("");
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      setPassword("");
+      setConfirmPassword("");
+      setErrors({
+        form:
+          error instanceof ApiError
+            ? error.message
+            : "Unable to create your account. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -88,12 +115,15 @@ export function RegisterPage() {
           type="password"
           value={confirmPassword}
         />
-        <p className="min-h-3 text-sm text-hyrd-muted">{errors.form}</p>
+        <p aria-live="polite" className="min-h-3 text-sm text-hyrd-muted">
+          {errors.form}
+        </p>
         <button
-          className="w-full rounded-[10px] bg-hyrd-gold px-4 py-2 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55]"
+          className="w-full rounded-[10px] bg-hyrd-gold px-4 py-2 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55] disabled:cursor-not-allowed disabled:opacity-70"
+          disabled={isSubmitting}
           type="submit"
         >
-          Create account
+          {isSubmitting ? "Creating account..." : "Create account"}
         </button>
       </form>
     </AuthShell>

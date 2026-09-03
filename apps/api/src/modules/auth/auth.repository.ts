@@ -2,6 +2,7 @@ import { prisma } from "../../lib/prisma.js";
 
 interface CreateUserData {
   email: string;
+  name: string;
   passwordHash: string;
 }
 

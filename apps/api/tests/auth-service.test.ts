@@ -40,6 +40,7 @@ import {
 const user = {
   id: "d760ddde-4145-4822-b6b4-c96d72c60c6a",
   email: "josef@example.com",
+  name: "Josef Soriente",
   passwordHash: "stored-password-hash",
   createdAt: new Date("2026-08-30T00:00:00.000Z"),
   updatedAt: new Date("2026-08-30T00:00:00.000Z"),
@@ -72,6 +73,7 @@ describe("authentication service", () => {
     vi.mocked(createUser).mockResolvedValue(user);
 
     const result = await registerUser({
+      name: "Josef Soriente",
       email: "josef@example.com",
       password: "StrongPassword123!",
     });
@@ -80,6 +82,7 @@ describe("authentication service", () => {
 
     expect(createUser).toHaveBeenCalledWith({
       email: "josef@example.com",
+      name: "Josef Soriente",
       passwordHash: "stored-password-hash",
     });
 
@@ -92,6 +95,7 @@ describe("authentication service", () => {
     expect(result.user).toEqual({
       id: user.id,
       email: user.email,
+      name: user.name,
       createdAt: user.createdAt.toISOString(),
     });
 
@@ -103,6 +107,7 @@ describe("authentication service", () => {
 
     await expect(
       registerUser({
+        name: "Josef Soriente",
         email: "josef@example.com",
         password: "StrongPassword123!",
       }),

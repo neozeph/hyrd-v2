@@ -28,6 +28,7 @@ describe("authentication API", () => {
     const agent = request.agent(app);
 
     const registrationResponse = await agent.post("/api/auth/register").send({
+      name: "Josef Soriente",
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
     });
@@ -36,9 +37,11 @@ describe("authentication API", () => {
 
     expect(registrationResponse.body.user).toMatchObject({
       email: TEST_EMAIL,
+      name: "Josef Soriente",
     });
 
     expect(registrationResponse.body.user).not.toHaveProperty("passwordHash");
+    expect(registrationResponse.body.user).not.toHaveProperty("sessionToken");
 
     expect(registrationResponse.body).not.toHaveProperty("sessionToken");
 
@@ -54,6 +57,7 @@ describe("authentication API", () => {
 
     expect(currentUserResponse.body.user).toMatchObject({
       email: TEST_EMAIL,
+      name: "Josef Soriente",
     });
   });
 
@@ -62,6 +66,7 @@ describe("authentication API", () => {
     const secondAgent = request.agent(app);
 
     const firstResponse = await firstAgent.post("/api/auth/register").send({
+      name: "Josef Soriente",
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
     });
@@ -71,6 +76,7 @@ describe("authentication API", () => {
     const duplicateResponse = await secondAgent
       .post("/api/auth/register")
       .send({
+        name: "Josef Soriente",
         email: TEST_EMAIL,
         password: TEST_PASSWORD,
       });
@@ -102,6 +108,7 @@ describe("authentication API", () => {
     await registrationAgent
       .post("/api/auth/register")
       .send({
+        name: "Josef Soriente",
         email: TEST_EMAIL,
         password: TEST_PASSWORD,
       })

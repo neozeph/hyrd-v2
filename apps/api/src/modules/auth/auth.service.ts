@@ -17,6 +17,7 @@ const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 interface SessionUser {
   id: string;
   email: string;
+  name: string | null;
   passwordHash: string;
   createdAt: Date;
   updatedAt: Date;
@@ -58,6 +59,7 @@ export async function registerUser(
 
   const user = await createUser({
     email: input.email,
+    name: input.name,
     passwordHash,
   });
 

@@ -34,6 +34,7 @@ describe("Applications API", () => {
     await agent
       .post("/api/auth/register")
       .send({
+        name: "Application Tester",
         email: TEST_EMAIL,
         password: TEST_PASSWORD,
       })
@@ -403,6 +404,7 @@ describe("Applications API", () => {
     await secondAgent
       .post("/api/auth/register")
       .send({
+        name: "Second Tester",
         email: SECOND_USER_EMAIL,
         password: TEST_PASSWORD,
       })

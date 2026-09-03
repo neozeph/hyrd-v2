@@ -1,6 +1,7 @@
-import { Link, NavLink } from "react-router";
 import { useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router";
 
+import { useAuth } from "../../auth/use-auth";
 import { Icon } from "../ui/icons";
 
 type AppShellProps = {
@@ -15,9 +16,26 @@ const navItems = [
 ];
 
 export function AppShell({ children }: AppShellProps) {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const sidebarWidth = isCollapsed ? "lg:pl-[72px]" : "lg:pl-64";
+  const displayName = user?.name?.trim() || user?.email || "HYRD user";
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+
+  async function handleLogout() {
+    try {
+      await logout();
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  }
 
   return (
     <div className="min-h-screen bg-hyrd-page text-hyrd-text">
@@ -105,10 +123,10 @@ export function AppShell({ children }: AppShellProps) {
             }`}
           >
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-sm font-semibold">
-              JS
+              {initials || "H"}
             </div>
             <div className={isCollapsed ? "lg:sr-only" : ""}>
-              <p className="text-sm font-medium">Josef Soriente</p>
+              <p className="text-sm font-medium">{displayName}</p>
               <p className="text-xs text-slate-300">Personal workspace</p>
             </div>
           </div>
@@ -117,6 +135,7 @@ export function AppShell({ children }: AppShellProps) {
               isCollapsed ? "w-full lg:justify-center" : "w-full"
             }`}
             title={isCollapsed ? "Logout" : undefined}
+            onClick={handleLogout}
             type="button"
           >
             <Icon className="h-4 w-4" name="logout" />
