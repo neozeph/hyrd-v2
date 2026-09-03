@@ -13,6 +13,9 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
+  "devDependencies": {
+    "typescript": "~6.0.2"
+  },
   "engines": {
     "node": ">=22"
   },
