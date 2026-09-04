@@ -1,6 +1,7 @@
 import {
   addApplication,
   deleteApplicationById,
+  getApplicationStats,
   findApplicationById,
   getAllApplications,
   updateApplicationById,
@@ -10,6 +11,7 @@ import type { ListApplicationsQuery } from "./application.schema.js";
 
 import type {
   ApplicationListResult,
+  ApplicationStats,
   CreateApplicationInput,
   JobApplication,
   UpdateApplicationInput,
@@ -20,6 +22,12 @@ export async function listApplications(
   query: ListApplicationsQuery,
 ): Promise<ApplicationListResult> {
   return getAllApplications(userId, query);
+}
+
+export async function getApplicationsStats(
+  userId: string,
+): Promise<ApplicationStats> {
+  return getApplicationStats(userId);
 }
 
 export async function createApplication(

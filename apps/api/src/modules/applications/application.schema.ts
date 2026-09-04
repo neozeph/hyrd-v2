@@ -2,6 +2,10 @@ import { z } from "zod";
 
 import { APPLICATION_STATUSES } from "./application.types.js";
 
+const statusQuerySchema = z.enum(APPLICATION_STATUSES, {
+  error: "Invalid application status",
+});
+
 export const applicationIdSchema = z
   .string({
     error: "Application ID must be a valid UUID",
@@ -46,6 +50,15 @@ export const updateApplicationSchema = createApplicationSchema
       .trim()
       .min(1, "Position cannot be empty")
       .optional(),
+
+    location: z.string().trim().min(1).nullable().optional(),
+    jobUrl: z.string().url("Job URL must be valid").nullable().optional(),
+    notes: z.string().trim().nullable().optional(),
+    appliedAt: z
+      .string()
+      .datetime("Applied date must be valid")
+      .nullable()
+      .optional(),
   })
   .refine((input) => Object.keys(input).length > 0, {
     message: "At least one field is required",
@@ -54,9 +67,7 @@ export const updateApplicationSchema = createApplicationSchema
 export const listApplicationsQuerySchema = z
   .object({
     status: z
-      .enum(APPLICATION_STATUSES, {
-        error: "Invalid application status",
-      })
+      .union([statusQuerySchema, z.array(statusQuerySchema).min(1)])
       .optional(),
 
     search: z
@@ -66,7 +77,9 @@ export const listApplicationsQuerySchema = z
       .max(100, "Search is too long")
       .optional(),
 
-    sortBy: z.enum(["createdAt", "appliedAt", "company"]).default("createdAt"),
+    sortBy: z
+      .enum(["createdAt", "updatedAt", "appliedAt", "company"])
+      .default("createdAt"),
 
     sortOrder: z.enum(["asc", "desc"]).default("desc"),
 

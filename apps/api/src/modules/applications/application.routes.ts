@@ -4,6 +4,7 @@ import { requireAuthentication } from "../auth/auth.middleware.js";
 
 import {
   getApplication,
+  getApplicationStats,
   getApplications,
   patchApplication,
   postApplication,
@@ -14,6 +15,7 @@ export const applicationRouter = Router();
 
 applicationRouter.use(requireAuthentication);
 
+applicationRouter.get("/stats", getApplicationStats);
 applicationRouter.get("/:id", getApplication);
 applicationRouter.get("/", getApplications);
 applicationRouter.post("/", postApplication);
