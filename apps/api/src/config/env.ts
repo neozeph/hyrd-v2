@@ -13,6 +13,8 @@ const envSchema = z.object({
 
   CLIENT_ORIGIN: z.string().url().default("http://localhost:5173"),
 
+  ENABLE_API_DOCS: z.enum(["true", "false"]).optional(),
+
   TRUST_PROXY: z.enum(["false", "loopback", "1"]).default("false"),
 
   COOKIE_SAME_SITE: z.enum(["lax", "strict", "none"]).optional(),
@@ -52,6 +54,19 @@ if (!result.success) {
 }
 
 export const env = result.data;
+
+export type Env = z.infer<typeof envSchema>;
+
+export function parseEnv(input: NodeJS.ProcessEnv): Env {
+  return envSchema.parse(input);
+}
+
+export function shouldEnableApiDocs(input: Pick<Env, "ENABLE_API_DOCS" | "NODE_ENV">): boolean {
+  if (input.ENABLE_API_DOCS !== undefined) return input.ENABLE_API_DOCS === "true";
+  return input.NODE_ENV !== "production";
+}
+
+export const enableApiDocs = shouldEnableApiDocs(env);
 
 export const cookieSameSite =
   env.COOKIE_SAME_SITE ?? (env.NODE_ENV === "production" ? "none" : "lax");
