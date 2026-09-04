@@ -122,11 +122,11 @@ Cross-origin cookie implications:
 - OWASP Top 10: A02:2025 Security Misconfiguration
 - OWASP API Top 10: API9:2023 Improper Inventory Management
 - ASVS 5.0: V14 Configuration
-- Status: Open
-- Evidence: `/api/docs` and `/api/docs.json` are mounted unconditionally.
+- Status: Mitigated
+- Evidence: Sprint 9 Part 3B added `ENABLE_API_DOCS`, defaulting documentation to enabled outside production and disabled in production. `/api/docs` and `/api/docs.json` are mounted only when documentation is enabled; when disabled, both endpoints fall through to the normal `Route not found` 404 response.
 - Realistic attack scenario: Attackers use complete endpoint schemas and examples to speed up enumeration, fuzzing, and abuse against a public API.
-- Recommended remediation: Gate Swagger UI and JSON behind `NODE_ENV !== "production"` or an explicit `ENABLE_API_DOCS` flag, or protect it behind authentication/IP allowlisting.
-- Verification method: Production smoke test confirms documentation endpoints are disabled or protected.
+- Recommended remediation: Complete. Continue to keep production documentation exposure intentional.
+- Verification method: Automated tests cover enabled docs, disabled docs, production default disabled behavior, and invalid `ENABLE_API_DOCS` validation.
 
 ### HYRD-SEC-005: Health Endpoint Does Not Prove Database Readiness
 
@@ -135,11 +135,11 @@ Cross-origin cookie implications:
 - OWASP Top 10: A10:2025 Mishandling of Exceptional Conditions
 - OWASP API Top 10: API8:2023 Security Misconfiguration
 - ASVS 5.0: V14 Configuration, V12 API and Web Service
-- Status: Open
-- Evidence: `/api/health` returns a static `status: "ok"` response without checking PostgreSQL or Prisma connectivity.
+- Status: Mitigated
+- Evidence: Sprint 9 Part 3B kept `/api/health` as a static liveness check and added unauthenticated `/api/ready`, which performs a minimal Prisma `SELECT 1` connectivity check. Successful checks return `status: "ready"` with `database: "available"`; failed checks log the underlying error and return a sanitized 503 response with `database: "unavailable"`.
 - Realistic attack scenario: A load balancer routes traffic to an API instance whose process is alive but database access is broken, causing user-facing failures.
-- Recommended remediation: Keep a cheap liveness endpoint and add a readiness endpoint that checks database connectivity with a short timeout.
-- Verification method: Simulate DB outage locally/staging and confirm readiness fails while liveness remains available.
+- Recommended remediation: Complete for application-level readiness. A future deployment can add platform-level timeout tuning if needed.
+- Verification method: Automated tests cover liveness without database checks, readiness success, and readiness failure.
 
 ### HYRD-SEC-006: Password Hashing Uses scrypt Defaults Without Explicit Cost Parameters
 

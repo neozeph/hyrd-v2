@@ -147,6 +147,8 @@ Production settings:
 
 - Use `NODE_ENV=production`.
 - Set `CLIENT_ORIGIN` to the deployed frontend origin.
+- Set `ENABLE_API_DOCS=false` or leave it unset in production unless API
+  documentation should be intentionally exposed.
 - Set `CSRF_SECRET` to a long random secret, at least 32 characters.
 - Keep `TRUST_PROXY=false` locally. Use `TRUST_PROXY=1` only when the API runs
   behind exactly one trusted deployment proxy.
@@ -221,6 +223,22 @@ Raw OpenAPI document:
 ```text
 http://localhost:3000/api/docs.json
 ```
+
+API documentation is enabled by default outside production and disabled by
+default when `NODE_ENV=production`. Set `ENABLE_API_DOCS=true` to expose
+`/api/docs` and `/api/docs.json` explicitly, or `ENABLE_API_DOCS=false` to hide
+them. When disabled, both routes return the normal API 404 response.
+
+Readiness endpoint:
+
+```text
+GET http://localhost:3000/api/ready
+```
+
+`/api/health` is a lightweight liveness check and does not query PostgreSQL.
+`/api/ready` checks whether the API can reach the database with a minimal Prisma
+query. Use liveness to check whether the process is up, and readiness to decide
+whether a deployment target should receive traffic.
 
 ## API Endpoints
 

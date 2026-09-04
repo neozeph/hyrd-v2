@@ -4,7 +4,7 @@ import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import cookieParser from "cookie-parser";
 
-import { env, trustProxy } from "./config/env.js";
+import { enableApiDocs, env, trustProxy } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { notFoundHandler } from "./middleware/not-found.js";
 import { applicationRouter } from "./modules/applications/application.routes.js";
@@ -14,66 +14,99 @@ import { authRouter } from "./modules/auth/auth.routes.js";
 import { validateUnsafeRequestOrigin } from "./middleware/origin.js";
 import { requireCsrfToken } from "./middleware/csrf.js";
 import { createRateLimit } from "./middleware/rate-limit.js";
+import { checkDatabaseReadiness } from "./lib/readiness.js";
 
-export const app = express();
-
-app.set("trust proxy", trustProxy);
-app.disable("x-powered-by");
-app.use(httpLogger);
-app.use(helmet());
-
-app.use(
-  cors({
-    origin: env.CLIENT_ORIGIN,
-    credentials: true,
-  }),
-);
-
-app.use(
-  express.json({
-    limit: "100kb",
-  }),
-);
-app.use(cookieParser());
-
-app.use(
-  "/api",
-  createRateLimit({
-    keyPrefix: "general",
-    limit: env.GENERAL_RATE_LIMIT_MAX,
-    windowMs: 15 * 60 * 1000,
-  }),
-);
-app.use(validateUnsafeRequestOrigin);
-app.use(requireCsrfToken);
-
-app.use("/api/applications", applicationRouter);
-app.use("/api/auth", authRouter);
-
-app.get("/api/health", (_request, response) => {
-  response.status(200).json({
-    status: "ok",
-    service: "hyrd-api",
-  });
-});
-
-const removeDocsContentSecurityPolicy: RequestHandler = (
-  _request,
-  response,
-  next,
-) => {
-  response.removeHeader("Content-Security-Policy");
-  next();
+type CreateAppOptions = {
+  apiDocsEnabled?: boolean;
 };
-app.get("/api/docs.json", (_request, response) => {
-  response.status(200).json(openApiDocument);
-});
-app.use(
-  "/api/docs",
-  removeDocsContentSecurityPolicy,
-  swaggerUi.serve,
-  swaggerUi.setup(openApiDocument),
-);
 
-app.use(notFoundHandler);
-app.use(errorHandler);
+export function createApp({ apiDocsEnabled = enableApiDocs }: CreateAppOptions = {}) {
+  const app = express();
+
+  app.set("trust proxy", trustProxy);
+  app.disable("x-powered-by");
+  app.use(httpLogger);
+  app.use(helmet());
+
+  app.use(
+    cors({
+      origin: env.CLIENT_ORIGIN,
+      credentials: true,
+    }),
+  );
+
+  app.use(
+    express.json({
+      limit: "100kb",
+    }),
+  );
+  app.use(cookieParser());
+
+  app.use(
+    "/api",
+    createRateLimit({
+      keyPrefix: "general",
+      limit: env.GENERAL_RATE_LIMIT_MAX,
+      windowMs: 15 * 60 * 1000,
+    }),
+  );
+  app.use(validateUnsafeRequestOrigin);
+  app.use(requireCsrfToken);
+
+  app.use("/api/applications", applicationRouter);
+  app.use("/api/auth", authRouter);
+
+  app.get("/api/health", (_request, response) => {
+    response.status(200).json({
+      status: "ok",
+      service: "hyrd-api",
+    });
+  });
+
+  app.get("/api/ready", async (_request, response) => {
+    const databaseIsAvailable = await checkDatabaseReadiness();
+
+    if (databaseIsAvailable) {
+      response.status(200).json({
+        status: "ready",
+        service: "hyrd-api",
+        database: "available",
+      });
+      return;
+    }
+
+    response.status(503).json({
+      status: "not_ready",
+      service: "hyrd-api",
+      database: "unavailable",
+    });
+  });
+
+  const removeDocsContentSecurityPolicy: RequestHandler = (
+    _request,
+    response,
+    next,
+  ) => {
+    response.removeHeader("Content-Security-Policy");
+    next();
+  };
+
+  if (apiDocsEnabled) {
+    app.get("/api/docs.json", (_request, response) => {
+      response.status(200).json(openApiDocument);
+    });
+    app.use(
+      "/api/docs",
+      removeDocsContentSecurityPolicy,
+      swaggerUi.serve,
+      swaggerUi.setup(openApiDocument),
+    );
+  }
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  return app;
+}
+
+export const app = createApp();
