@@ -4,16 +4,20 @@ import helmet from "helmet";
 import swaggerUi from "swagger-ui-express";
 import cookieParser from "cookie-parser";
 
-import { env } from "./config/env.js";
+import { env, trustProxy } from "./config/env.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { notFoundHandler } from "./middleware/not-found.js";
 import { applicationRouter } from "./modules/applications/application.routes.js";
 import { httpLogger } from "./config/logger.js";
 import { openApiDocument } from "./docs/openapi.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { validateUnsafeRequestOrigin } from "./middleware/origin.js";
+import { requireCsrfToken } from "./middleware/csrf.js";
+import { createRateLimit } from "./middleware/rate-limit.js";
 
 export const app = express();
 
+app.set("trust proxy", trustProxy);
 app.disable("x-powered-by");
 app.use(httpLogger);
 app.use(helmet());
@@ -31,6 +35,17 @@ app.use(
   }),
 );
 app.use(cookieParser());
+
+app.use(
+  "/api",
+  createRateLimit({
+    keyPrefix: "general",
+    limit: env.GENERAL_RATE_LIMIT_MAX,
+    windowMs: 15 * 60 * 1000,
+  }),
+);
+app.use(validateUnsafeRequestOrigin);
+app.use(requireCsrfToken);
 
 app.use("/api/applications", applicationRouter);
 app.use("/api/auth", authRouter);

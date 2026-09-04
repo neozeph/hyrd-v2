@@ -7,6 +7,11 @@ import { prisma } from "../src/lib/prisma.js";
 const TEST_EMAIL = "auth-test@hyrd.dev";
 const TEST_PASSWORD = "StrongPassword123!";
 
+async function getCsrfToken(agent: ReturnType<typeof request.agent>) {
+  const response = await agent.get("/api/auth/csrf").expect(200);
+  return response.body.csrfToken as string;
+}
+
 async function removeTestUser() {
   await prisma.user.deleteMany({
     where: {
@@ -26,12 +31,16 @@ describe("authentication API", () => {
 
   it("registers and authenticates a user", async () => {
     const agent = request.agent(app);
+    const csrfToken = await getCsrfToken(agent);
 
-    const registrationResponse = await agent.post("/api/auth/register").send({
-      name: "Josef Soriente",
-      email: TEST_EMAIL,
-      password: TEST_PASSWORD,
-    });
+    const registrationResponse = await agent
+      .post("/api/auth/register")
+      .set("X-CSRF-Token", csrfToken)
+      .send({
+        name: "Josef Soriente",
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+      });
 
     expect(registrationResponse.status).toBe(201);
 
@@ -64,17 +73,23 @@ describe("authentication API", () => {
   it("rejects duplicate registration", async () => {
     const firstAgent = request.agent(app);
     const secondAgent = request.agent(app);
+    const firstCsrfToken = await getCsrfToken(firstAgent);
+    const secondCsrfToken = await getCsrfToken(secondAgent);
 
-    const firstResponse = await firstAgent.post("/api/auth/register").send({
-      name: "Josef Soriente",
-      email: TEST_EMAIL,
-      password: TEST_PASSWORD,
-    });
+    const firstResponse = await firstAgent
+      .post("/api/auth/register")
+      .set("X-CSRF-Token", firstCsrfToken)
+      .send({
+        name: "Josef Soriente",
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+      });
 
     expect(firstResponse.status).toBe(201);
 
     const duplicateResponse = await secondAgent
       .post("/api/auth/register")
+      .set("X-CSRF-Token", secondCsrfToken)
       .send({
         name: "Josef Soriente",
         email: TEST_EMAIL,
@@ -89,10 +104,15 @@ describe("authentication API", () => {
   });
 
   it("rejects invalid login credentials", async () => {
-    const response = await request(app).post("/api/auth/login").send({
-      email: TEST_EMAIL,
-      password: "IncorrectPassword123!",
-    });
+    const agent = request.agent(app);
+    const csrfToken = await getCsrfToken(agent);
+    const response = await agent
+      .post("/api/auth/login")
+      .set("X-CSRF-Token", csrfToken)
+      .send({
+        email: TEST_EMAIL,
+        password: "IncorrectPassword123!",
+      });
 
     expect(response.status).toBe(401);
 
@@ -104,9 +124,11 @@ describe("authentication API", () => {
 
   it("logs in, logs out, and invalidates the session", async () => {
     const registrationAgent = request.agent(app);
+    const registrationCsrfToken = await getCsrfToken(registrationAgent);
 
     await registrationAgent
       .post("/api/auth/register")
+      .set("X-CSRF-Token", registrationCsrfToken)
       .send({
         name: "Josef Soriente",
         email: TEST_EMAIL,
@@ -114,20 +136,29 @@ describe("authentication API", () => {
       })
       .expect(201);
 
-    await registrationAgent.post("/api/auth/logout").expect(204);
+    await registrationAgent
+      .post("/api/auth/logout")
+      .set("X-CSRF-Token", registrationCsrfToken)
+      .expect(204);
 
     const agent = request.agent(app);
+    const csrfToken = await getCsrfToken(agent);
 
-    const loginResponse = await agent.post("/api/auth/login").send({
-      email: TEST_EMAIL,
-      password: TEST_PASSWORD,
-    });
+    const loginResponse = await agent
+      .post("/api/auth/login")
+      .set("X-CSRF-Token", csrfToken)
+      .send({
+        email: TEST_EMAIL,
+        password: TEST_PASSWORD,
+      });
 
     expect(loginResponse.status).toBe(200);
 
     await agent.get("/api/auth/me").expect(200);
 
-    const logoutResponse = await agent.post("/api/auth/logout");
+    const logoutResponse = await agent
+      .post("/api/auth/logout")
+      .set("X-CSRF-Token", csrfToken);
 
     expect(logoutResponse.status).toBe(204);
 

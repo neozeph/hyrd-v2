@@ -16,6 +16,24 @@ const TEST_PASSWORD = "StrongPassword123!";
 
 let agent: ReturnType<typeof request.agent>;
 
+async function getCsrfToken(testAgent: ReturnType<typeof request.agent>) {
+  const response = await testAgent.get("/api/auth/csrf").expect(200);
+  return response.body.csrfToken as string;
+}
+
+function attachCsrfToUnsafeRequests(
+  testAgent: ReturnType<typeof request.agent>,
+  csrfToken: string,
+) {
+  const unsafeMethods = ["delete", "patch", "post", "put"] as const;
+
+  for (const method of unsafeMethods) {
+    const originalMethod = testAgent[method].bind(testAgent);
+    testAgent[method] = ((url: string) =>
+      originalMethod(url).set("X-CSRF-Token", csrfToken)) as typeof testAgent[typeof method];
+  }
+}
+
 async function removeTestUsers() {
   await prisma.user.deleteMany({
     where: {
@@ -32,6 +50,7 @@ describe("Applications API", () => {
     await removeTestUsers();
 
     agent = request.agent(app);
+    attachCsrfToUnsafeRequests(agent, await getCsrfToken(agent));
 
     await agent
       .post("/api/auth/register")
@@ -495,6 +514,7 @@ describe("Applications API", () => {
 
   it("isolates application statistics between users", async () => {
     const secondAgent = request.agent(app);
+    attachCsrfToUnsafeRequests(secondAgent, await getCsrfToken(secondAgent));
 
     await secondAgent
       .post("/api/auth/register")
@@ -608,6 +628,7 @@ describe("Applications API", () => {
 
   it("prevents users from accessing another user's application", async () => {
     const secondAgent = request.agent(app);
+    attachCsrfToUnsafeRequests(secondAgent, await getCsrfToken(secondAgent));
 
     await secondAgent
       .post("/api/auth/register")

@@ -123,6 +123,40 @@ The local defaults expect PostgreSQL on port `5432`.
 
 Never commit `.env` or `.env.test`.
 
+### Cookie Authentication Security
+
+HYRD uses HTTP-only session cookies. The browser cannot read the session token,
+and frontend requests include credentials through the shared API client.
+
+State-changing API requests also require a CSRF token:
+
+1. The frontend calls `GET /api/auth/csrf` with credentials.
+2. The API sets a host-only CSRF cookie and returns the signed token as JSON.
+3. The frontend keeps the token in memory and sends it as `X-CSRF-Token` on
+   `POST`, `PUT`, `PATCH`, and `DELETE` requests.
+
+CORS, SameSite, and CSRF each solve different problems:
+
+- CORS restricts which browser origins can read credentialed API responses.
+- SameSite controls when cookies are sent during cross-site navigation or
+  requests.
+- CSRF tokens prove that an unsafe request came from HYRD's frontend code, not
+  only from a browser that happens to hold a valid cookie.
+
+Production settings:
+
+- Use `NODE_ENV=production`.
+- Set `CLIENT_ORIGIN` to the deployed frontend origin.
+- Set `CSRF_SECRET` to a long random secret, at least 32 characters.
+- Keep `TRUST_PROXY=false` locally. Use `TRUST_PROXY=1` only when the API runs
+  behind exactly one trusted deployment proxy.
+- Use `COOKIE_SAME_SITE=lax` for same-origin or same-site deployments when it
+  works for the chosen hosting setup.
+- Use `COOKIE_SAME_SITE=none` only when the frontend and API are cross-site
+  HTTPS origins. Production cookies are `Secure` automatically.
+- Do not set a broad cookie domain by default. Host-only cookies are safer for
+  the API host.
+
 ## Database Setup
 
 Start PostgreSQL:
