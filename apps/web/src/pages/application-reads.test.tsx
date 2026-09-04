@@ -75,10 +75,14 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
 }
 
 function mockFetch(...responses: Response[]) {
-  const fetchMock = vi.fn();
-  for (const response of responses) {
-    fetchMock.mockResolvedValueOnce(response);
-  }
+  const queuedResponses = [...responses];
+  const fetchMock = vi.fn((url: string) => {
+    if (url.endsWith("/api/auth/csrf")) {
+      return Promise.resolve(jsonResponse({ csrfToken: "csrf-token" }));
+    }
+
+    return Promise.resolve(queuedResponses.shift() ?? jsonResponse({}));
+  });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }

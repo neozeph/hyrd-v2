@@ -5,6 +5,7 @@ import {
   getSessionCookieOptions,
   SESSION_COOKIE_NAME,
 } from "./auth.cookie.js";
+import { clearCsrf } from "../../middleware/csrf.js";
 import { AuthServiceError } from "./auth.errors.js";
 import { loginSchema, registerSchema } from "./auth.schema.js";
 import {
@@ -108,6 +109,7 @@ export const logout: RequestHandler = async (request, response, next) => {
     }
 
     response.clearCookie(SESSION_COOKIE_NAME, getClearSessionCookieOptions());
+    clearCsrf(response);
 
     response.status(204).send();
   } catch (error) {

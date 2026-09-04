@@ -12,6 +12,10 @@ type ErrorBody = {
   error?: string;
 };
 
+const unsafeMethods = new Set(["DELETE", "PATCH", "POST", "PUT"]);
+let csrfToken: string | null = null;
+let csrfTokenPromise: Promise<string> | null = null;
+
 async function parseJsonSafely(response: Response) {
   const text = await response.text();
   if (!text) return null;
@@ -23,10 +27,7 @@ async function parseJsonSafely(response: Response) {
   }
 }
 
-export async function apiRequest<T>(
-  path: string,
-  { body, method = "GET", signal }: RequestOptions = {},
-): Promise<T> {
+function getApiBaseUrl() {
   const apiBaseUrl = import.meta.env.VITE_API_URL;
 
   if (!apiBaseUrl) {
@@ -36,10 +37,72 @@ export async function apiRequest<T>(
     });
   }
 
+  return apiBaseUrl;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+async function fetchCsrfToken(apiBaseUrl: string): Promise<string> {
+  const response = await fetch(`${apiBaseUrl}/api/auth/csrf`, {
+    credentials: "include",
+    method: "GET",
+  });
+  const parsedBody = await parseJsonSafely(response);
+
+  if (!response.ok) {
+    throw new ApiError({
+      message: "Unable to prepare a secure request.",
+      status: response.status,
+    });
+  }
+
+  if (!isRecord(parsedBody) || typeof parsedBody.csrfToken !== "string") {
+    throw new ApiError({
+      message: "Invalid CSRF response.",
+      status: response.status,
+    });
+  }
+
+  csrfToken = parsedBody.csrfToken;
+  return csrfToken;
+}
+
+async function getCsrfToken(apiBaseUrl: string): Promise<string> {
+  if (csrfToken !== null) return csrfToken;
+
+  csrfTokenPromise ??= fetchCsrfToken(apiBaseUrl).finally(() => {
+    csrfTokenPromise = null;
+  });
+
+  return csrfTokenPromise;
+}
+
+export function clearCsrfToken(): void {
+  csrfToken = null;
+  csrfTokenPromise = null;
+}
+
+export async function apiRequest<T>(
+  path: string,
+  { body, method = "GET", signal }: RequestOptions = {},
+): Promise<T> {
+  const apiBaseUrl = getApiBaseUrl();
+  const headers: Record<string, string> = {};
+
+  if (unsafeMethods.has(method)) {
+    headers["X-CSRF-Token"] = await getCsrfToken(apiBaseUrl);
+  }
+
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const response = await fetch(`${apiBaseUrl}${path}`, {
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "include",
-    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    headers,
     method,
     signal,
   });
@@ -59,6 +122,8 @@ export async function apiRequest<T>(
       status: response.status,
     });
   }
+
+  if (path === "/api/auth/logout") clearCsrfToken();
 
   return parsedBody as T;
 }

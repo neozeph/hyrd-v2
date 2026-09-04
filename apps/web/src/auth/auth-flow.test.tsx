@@ -46,9 +46,13 @@ function jsonResponse(body: unknown, init: ResponseInit = {}) {
 }
 
 function mockFetch(...responses: Response[]) {
-  const fetchMock = vi.fn();
-  responses.forEach((response) => {
-    fetchMock.mockResolvedValueOnce(response);
+  const queuedResponses = [...responses];
+  const fetchMock = vi.fn((url: string) => {
+    if (url.endsWith("/api/auth/csrf")) {
+      return Promise.resolve(jsonResponse({ csrfToken: "csrf-token" }));
+    }
+
+    return Promise.resolve(queuedResponses.shift() ?? jsonResponse({}));
   });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
@@ -113,8 +117,7 @@ describe("authentication flow", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByRole("heading", { name: "Applications" })).not.toBeNull();
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+    expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3000/api/auth/login",
       expect.objectContaining({
         body: JSON.stringify({
@@ -122,6 +125,9 @@ describe("authentication flow", () => {
           password: "StrongPassword123!",
         }),
         credentials: "include",
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "csrf-token",
+        }),
         method: "POST",
       }),
     );
