@@ -6,12 +6,14 @@ import {
 } from "react";
 
 import { ApiError } from "../lib/api-error";
+import { applicationQueryKeys } from "../lib/application-queries";
 import {
   getCurrentUserRequest,
   loginRequest,
   logoutRequest,
   registerRequest,
 } from "../lib/auth-api";
+import { queryClient } from "../lib/query-client";
 import type {
   AuthenticatedUser,
   LoginRequest,
@@ -33,10 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         setUser(null);
+        queryClient.removeQueries({ queryKey: applicationQueryKeys.all });
         return;
       }
 
       setUser(null);
+      queryClient.removeQueries({ queryKey: applicationQueryKeys.all });
       throw error;
     } finally {
       setIsLoading(false);
@@ -51,7 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const response = await getCurrentUserRequest();
         if (isActive) setUser(response.user);
       } catch {
-        if (isActive) setUser(null);
+        if (isActive) {
+          setUser(null);
+          queryClient.removeQueries({ queryKey: applicationQueryKeys.all });
+        }
       } finally {
         if (isActive) setIsLoading(false);
       }
@@ -83,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } finally {
       setUser(null);
+      queryClient.removeQueries({ queryKey: applicationQueryKeys.all });
     }
   }, []);
 

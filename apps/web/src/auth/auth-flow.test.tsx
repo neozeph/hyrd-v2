@@ -11,6 +11,33 @@ const testUser = {
   createdAt: "2026-09-03T00:00:00.000Z",
 };
 
+const emptyStats = {
+  total: 0,
+  active: 0,
+  interviews: 0,
+  offers: 0,
+  countsByStatus: {
+    saved: 0,
+    applied: 0,
+    screening: 0,
+    assessment: 0,
+    interview: 0,
+    offer: 0,
+    rejected: 0,
+    withdrawn: 0,
+  },
+};
+
+const emptyList = {
+  data: [],
+  pagination: {
+    page: 1,
+    limit: 6,
+    total: 0,
+    totalPages: 0,
+  },
+};
+
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
     headers: { "Content-Type": "application/json" },
@@ -38,7 +65,11 @@ describe("authentication flow", () => {
   });
 
   it("restores an existing session before showing protected content", async () => {
-    const fetchMock = mockFetch(jsonResponse({ user: testUser }));
+    const fetchMock = mockFetch(
+      jsonResponse({ user: testUser }),
+      jsonResponse(emptyStats),
+      jsonResponse(emptyList),
+    );
 
     renderApp({ initialEntries: ["/dashboard"] });
 
@@ -66,6 +97,8 @@ describe("authentication flow", () => {
     const fetchMock = mockFetch(
       jsonResponse({ error: "Authentication required" }, { status: 401 }),
       jsonResponse({ user: testUser }),
+      jsonResponse(emptyList),
+      jsonResponse(emptyStats),
     );
     const user = userEvent.setup();
 
@@ -80,7 +113,8 @@ describe("authentication flow", () => {
     await user.click(screen.getByRole("button", { name: "Log in" }));
 
     expect(await screen.findByRole("heading", { name: "Applications" })).not.toBeNull();
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
       "http://localhost:3000/api/auth/login",
       expect.objectContaining({
         body: JSON.stringify({
@@ -141,7 +175,12 @@ describe("authentication flow", () => {
   });
 
   it("logs out and clears protected content", async () => {
-    mockFetch(jsonResponse({ user: testUser }), new Response(null, { status: 204 }));
+    mockFetch(
+      jsonResponse({ user: testUser }),
+      jsonResponse(emptyStats),
+      jsonResponse(emptyList),
+      new Response(null, { status: 204 }),
+    );
     const user = userEvent.setup();
 
     renderApp({ initialEntries: ["/dashboard"] });

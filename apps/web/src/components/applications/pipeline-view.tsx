@@ -3,11 +3,13 @@ import type { JobApplication } from "../../types/application";
 
 type PipelineViewProps = {
   applications: JobApplication[];
+  onOpen?: (applicationId: string) => void;
   showStatus?: boolean;
 };
 
 export function PipelineView({
   applications,
+  onOpen,
   showStatus = false,
 }: PipelineViewProps) {
   if (!applications.length) {
@@ -28,6 +30,7 @@ export function PipelineView({
           <ApplicationCard
             application={application}
             key={application.id}
+            onOpen={onOpen}
             showStatus={showStatus}
           />
         ))}

@@ -2,7 +2,8 @@ import { ApiError } from "./api-error";
 
 type RequestOptions = {
   body?: unknown;
-  method?: "GET" | "POST";
+  method?: "DELETE" | "GET" | "PATCH" | "POST";
+  signal?: AbortSignal;
 };
 
 type ErrorBody = {
@@ -24,7 +25,7 @@ async function parseJsonSafely(response: Response) {
 
 export async function apiRequest<T>(
   path: string,
-  { body, method = "GET" }: RequestOptions = {},
+  { body, method = "GET", signal }: RequestOptions = {},
 ): Promise<T> {
   const apiBaseUrl = import.meta.env.VITE_API_URL;
 
@@ -40,6 +41,7 @@ export async function apiRequest<T>(
     credentials: "include",
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     method,
+    signal,
   });
 
   const parsedBody = await parseJsonSafely(response);

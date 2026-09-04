@@ -10,6 +10,8 @@ const TEST_EMAIL = "applications-test@hyrd.dev";
 
 const SECOND_USER_EMAIL = "applications-isolation-test@hyrd.dev";
 
+const STATS_USER_EMAIL = "applications-stats-isolation-test@hyrd.dev";
+
 const TEST_PASSWORD = "StrongPassword123!";
 
 let agent: ReturnType<typeof request.agent>;
@@ -18,7 +20,7 @@ async function removeTestUsers() {
   await prisma.user.deleteMany({
     where: {
       email: {
-        in: [TEST_EMAIL, SECOND_USER_EMAIL],
+        in: [TEST_EMAIL, SECOND_USER_EMAIL, STATS_USER_EMAIL],
       },
     },
   });
@@ -173,6 +175,34 @@ describe("Applications API", () => {
         updatedAt: expect.any(String),
       }),
     );
+  });
+
+  it("clears optional application fields", async () => {
+    const createResponse = await agent.post("/api/applications").send({
+      company: "Clearable",
+      position: "Optional Fields",
+      location: "Remote",
+      jobUrl: "https://example.com/job",
+      notes: "Initial note",
+      appliedAt: "2026-08-20T00:00:00.000Z",
+    });
+
+    const applicationId = createResponse.body.id as string;
+
+    const response = await agent
+      .patch(`/api/applications/${applicationId}`)
+      .send({
+        location: null,
+        jobUrl: null,
+        notes: null,
+        appliedAt: null,
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toHaveProperty("location");
+    expect(response.body).not.toHaveProperty("jobUrl");
+    expect(response.body).not.toHaveProperty("notes");
+    expect(response.body).not.toHaveProperty("appliedAt");
   });
 
   it("deletes an existing application", async () => {
@@ -361,6 +391,184 @@ describe("Applications API", () => {
     expect(response.status).toBe(200);
     expect(response.body.data).toHaveLength(1);
     expect(response.body.data[0].status).toBe("interview");
+  });
+
+  it("filters applications by repeated statuses", async () => {
+    await agent.post("/api/applications").send({
+      company: "Rejected Company",
+      position: "Rejected Role",
+      status: "rejected",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Withdrawn Company",
+      position: "Withdrawn Role",
+      status: "withdrawn",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Active Company",
+      position: "Active Role",
+      status: "applied",
+    });
+
+    const response = await agent.get(
+      "/api/applications?status=rejected&status=withdrawn",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(2);
+    expect(response.body.data.map((application: { status: string }) => application.status)).toEqual(
+      expect.arrayContaining(["rejected", "withdrawn"]),
+    );
+    expect(response.body.pagination).toMatchObject({
+      total: 2,
+    });
+  });
+
+  it("rejects unauthenticated application stats requests", async () => {
+    const response = await request(app).get("/api/applications/stats");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: "Authentication required",
+    });
+  });
+
+  it("returns current-user application statistics by status", async () => {
+    await agent.post("/api/applications").send({
+      company: "Saved Company",
+      position: "Saved Role",
+      status: "saved",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Applied Company",
+      position: "Applied Role",
+      status: "applied",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Interview Company",
+      position: "Interview Role",
+      status: "interview",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Offer Company",
+      position: "Offer Role",
+      status: "offer",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Rejected Company",
+      position: "Rejected Role",
+      status: "rejected",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Withdrawn Company",
+      position: "Withdrawn Role",
+      status: "withdrawn",
+    });
+
+    const response = await agent.get("/api/applications/stats");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      total: 6,
+      active: 4,
+      interviews: 1,
+      offers: 1,
+      countsByStatus: {
+        saved: 1,
+        applied: 1,
+        screening: 0,
+        interview: 1,
+        assessment: 0,
+        offer: 1,
+        rejected: 1,
+        withdrawn: 1,
+      },
+    });
+  });
+
+  it("isolates application statistics between users", async () => {
+    const secondAgent = request.agent(app);
+
+    await secondAgent
+      .post("/api/auth/register")
+      .send({
+        name: "Second Tester",
+        email: STATS_USER_EMAIL,
+        password: TEST_PASSWORD,
+      })
+      .expect(201);
+
+    await agent.post("/api/applications").send({
+      company: "First User Company",
+      position: "First User Role",
+      status: "interview",
+    });
+
+    await secondAgent.post("/api/applications").send({
+      company: "Second User Company",
+      position: "Second User Role",
+      status: "rejected",
+    });
+
+    const firstResponse = await agent.get("/api/applications/stats");
+    const secondResponse = await secondAgent.get("/api/applications/stats");
+
+    expect(firstResponse.status).toBe(200);
+    expect(firstResponse.body).toMatchObject({
+      total: 1,
+      active: 1,
+      interviews: 1,
+      offers: 0,
+    });
+
+    expect(secondResponse.status).toBe(200);
+    expect(secondResponse.body).toMatchObject({
+      total: 1,
+      active: 0,
+      interviews: 0,
+      offers: 0,
+    });
+  });
+
+  it("sorts applications by updated date", async () => {
+    const olderResponse = await agent.post("/api/applications").send({
+      company: "Older Company",
+      position: "Older Role",
+    });
+
+    await agent.post("/api/applications").send({
+      company: "Newer Company",
+      position: "Newer Role",
+    });
+
+    const olderId = olderResponse.body.id as string;
+
+    await agent.patch(`/api/applications/${olderId}`).send({
+      notes: "Recently updated.",
+    });
+
+    const response = await agent.get(
+      "/api/applications?sortBy=updatedAt&sortOrder=desc",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.data[0]).toMatchObject({
+      id: olderId,
+      company: "Older Company",
+    });
+  });
+
+  it("rejects unsupported application sort fields", async () => {
+    const response = await agent.get("/api/applications?sortBy=updated");
+
+    expect(response.status).toBe(400);
   });
 
   it("paginates application results", async () => {

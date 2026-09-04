@@ -70,8 +70,20 @@ export const openApiDocument = {
             name: "status",
             in: "query",
             schema: {
-              $ref: "#/components/schemas/ApplicationStatus",
+              oneOf: [
+                {
+                  $ref: "#/components/schemas/ApplicationStatus",
+                },
+                {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/ApplicationStatus",
+                  },
+                },
+              ],
             },
+            style: "form",
+            explode: true,
           },
           {
             name: "search",
@@ -86,7 +98,7 @@ export const openApiDocument = {
             in: "query",
             schema: {
               type: "string",
-              enum: ["createdAt", "appliedAt", "company"],
+              enum: ["createdAt", "updatedAt", "appliedAt", "company"],
               default: "createdAt",
             },
           },
@@ -183,6 +195,27 @@ export const openApiDocument = {
               "application/json": {
                 schema: {
                   $ref: "#/components/schemas/Error",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+
+    "/api/applications/stats": {
+      get: {
+        tags: ["Applications"],
+        summary: "Get application statistics",
+
+        responses: {
+          "200": {
+            description: "Current user's application statistics",
+
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ApplicationStats",
                 },
               },
             },
@@ -484,22 +517,23 @@ export const openApiDocument = {
           },
 
           location: {
-            type: "string",
-            minLength: 1,
+            nullable: true,
+            oneOf: [{ type: "string", minLength: 1 }, { type: "null" }],
           },
 
           jobUrl: {
-            type: "string",
-            format: "uri",
+            nullable: true,
+            oneOf: [{ type: "string", format: "uri" }, { type: "null" }],
           },
 
           notes: {
-            type: "string",
+            nullable: true,
+            oneOf: [{ type: "string" }, { type: "null" }],
           },
 
           appliedAt: {
-            type: "string",
-            format: "date-time",
+            nullable: true,
+            oneOf: [{ type: "string", format: "date-time" }, { type: "null" }],
           },
         },
       },
@@ -540,6 +574,64 @@ export const openApiDocument = {
                 type: "integer",
                 example: 2,
               },
+            },
+          },
+        },
+      },
+
+      ApplicationStats: {
+        type: "object",
+        required: [
+          "total",
+          "active",
+          "interviews",
+          "offers",
+          "countsByStatus",
+        ],
+
+        properties: {
+          total: {
+            type: "integer",
+            example: 12,
+          },
+
+          active: {
+            type: "integer",
+            example: 8,
+          },
+
+          interviews: {
+            type: "integer",
+            example: 2,
+          },
+
+          offers: {
+            type: "integer",
+            example: 1,
+          },
+
+          countsByStatus: {
+            type: "object",
+            required: [
+              "saved",
+              "applied",
+              "screening",
+              "interview",
+              "assessment",
+              "offer",
+              "rejected",
+              "withdrawn",
+            ],
+
+            properties: {
+              saved: { type: "integer", example: 1 },
+              applied: { type: "integer", example: 3 },
+              screening: { type: "integer", example: 1 },
+              interview: { type: "integer", example: 2 },
+              assessment: { type: "integer", example: 1 },
+              offer: { type: "integer", example: 1 },
+              rejected: { type: "integer", example: 2 },
+              withdrawn: { type: "integer", example: 1 },
             },
           },
         },

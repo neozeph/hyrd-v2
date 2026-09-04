@@ -9,6 +9,7 @@ import {
 import {
   createApplication,
   deleteApplication,
+  getApplicationsStats,
   getApplicationById,
   listApplications,
   updateApplication,
@@ -34,6 +35,16 @@ export async function getApplications(
   const result = await listApplications(userId, query);
 
   response.status(200).json(result);
+}
+
+export async function getApplicationStats(
+  request: Request,
+  response: Response,
+): Promise<void> {
+  const userId = getAuthenticatedUserId(request);
+  const stats = await getApplicationsStats(userId);
+
+  response.status(200).json(stats);
 }
 
 export async function postApplication(

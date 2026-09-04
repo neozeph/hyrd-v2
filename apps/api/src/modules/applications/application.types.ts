@@ -11,11 +11,15 @@ export const APPLICATION_STATUSES = [
 
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 
-export type UpdateApplicationInput = {
-  [Key in keyof CreateApplicationInput]?:
-    | CreateApplicationInput[Key]
-    | undefined;
-}; // partial = makes props optional
+export interface UpdateApplicationInput {
+  company?: string | undefined;
+  position?: string | undefined;
+  status?: ApplicationStatus | undefined;
+  location?: string | null | undefined;
+  jobUrl?: string | null | undefined;
+  notes?: string | null | undefined;
+  appliedAt?: string | null | undefined;
+}
 
 export interface JobApplication {
   id: string;
@@ -50,4 +54,14 @@ export interface ApplicationPagination {
 export interface ApplicationListResult {
   data: JobApplication[];
   pagination: ApplicationPagination;
+}
+
+export type ApplicationStatusCounts = Record<ApplicationStatus, number>;
+
+export interface ApplicationStats {
+  total: number;
+  active: number;
+  interviews: number;
+  offers: number;
+  countsByStatus: ApplicationStatusCounts;
 }

@@ -1,9 +1,11 @@
 import type {
+  ApplicationStats,
   ApplicationListResult,
   CreateApplicationInput,
   JobApplication,
   UpdateApplicationInput,
 } from "./application.types.js";
+import { APPLICATION_STATUSES } from "./application.types.js";
 
 import { prisma } from "../../lib/prisma.js";
 import { toJobApplication } from "./application.mapper.js";
@@ -20,7 +22,15 @@ export async function getAllApplications(
   const where: Prisma.JobApplicationWhereInput = {
     userId,
 
-    ...(status !== undefined ? { status } : {}),
+    ...(status !== undefined
+      ? {
+          status: Array.isArray(status)
+            ? {
+                in: status,
+              }
+            : status,
+        }
+      : {}),
 
     ...(search !== undefined
       ? {
@@ -57,6 +67,12 @@ export async function getAllApplications(
       };
       break;
 
+    case "updatedAt":
+      orderBy = {
+        updatedAt: sortOrder,
+      };
+      break;
+
     default:
       orderBy = {
         createdAt: sortOrder,
@@ -84,6 +100,47 @@ export async function getAllApplications(
       total,
       totalPages: Math.ceil(total / limit),
     },
+  };
+}
+
+export async function getApplicationStats(
+  userId: string,
+): Promise<ApplicationStats> {
+  const statusGroups = await prisma.jobApplication.groupBy({
+    by: ["status"],
+    where: {
+      userId,
+    },
+    _count: {
+      status: true,
+    },
+  });
+
+  const countsByStatus = APPLICATION_STATUSES.reduce(
+    (counts, status) => ({
+      ...counts,
+      [status]: 0,
+    }),
+    {} as ApplicationStats["countsByStatus"],
+  );
+
+  for (const group of statusGroups) {
+    countsByStatus[group.status] = group._count.status;
+  }
+
+  const rejected = countsByStatus.rejected;
+  const withdrawn = countsByStatus.withdrawn;
+  const total = Object.values(countsByStatus).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
+
+  return {
+    active: total - rejected - withdrawn,
+    countsByStatus,
+    interviews: countsByStatus.interview,
+    offers: countsByStatus.offer,
+    total,
   };
 }
 
@@ -152,9 +209,11 @@ export async function updateApplicationById(
       ...(updates.notes !== undefined ? { notes: updates.notes } : {}),
 
       ...(updates.appliedAt !== undefined
-        ? {
-            appliedAt: new Date(updates.appliedAt),
-          }
+        ? updates.appliedAt === null
+          ? { appliedAt: null }
+          : {
+              appliedAt: new Date(updates.appliedAt),
+            }
         : {}),
     },
   });

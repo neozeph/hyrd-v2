@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 
 import { useAuth } from "../../auth/use-auth";
@@ -7,6 +7,12 @@ import { Icon } from "../ui/icons";
 type AppShellProps = {
   children: React.ReactNode;
 };
+
+type AppShellContextValue = {
+  openMobileNavigation: () => void;
+};
+
+const AppShellContext = createContext<AppShellContextValue | null>(null);
 
 const navItems = [
   { label: "Overview", icon: "overview", to: "/dashboard" },
@@ -38,16 +44,10 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-hyrd-page text-hyrd-text">
-      <button
-        aria-label="Open navigation"
-        className="fixed left-4 top-4 z-40 grid h-10 w-10 place-items-center rounded-lg border border-hyrd-border bg-white text-hyrd-text shadow-sm focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:hidden"
-        onClick={() => setIsMobileOpen(true)}
-        type="button"
-      >
-        <Icon className="h-5 w-5" name="menu" />
-      </button>
-
+    <AppShellContext.Provider
+      value={{ openMobileNavigation: () => setIsMobileOpen(true) }}
+    >
+      <div className="min-h-screen overflow-x-hidden bg-hyrd-page text-hyrd-text">
       {isMobileOpen ? (
         <button
           aria-label="Close navigation overlay"
@@ -147,6 +147,39 @@ export function AppShell({ children }: AppShellProps) {
       <div className={`min-h-screen transition-[padding] duration-200 ${sidebarWidth}`}>
         {children}
       </div>
-    </div>
+      </div>
+    </AppShellContext.Provider>
+  );
+}
+
+export function PageHeader({
+  action,
+  title,
+}: {
+  action?: React.ReactNode;
+  title: string;
+}) {
+  const context = useContext(AppShellContext);
+
+  return (
+    <header className="border-b border-hyrd-border bg-white px-4 py-3 sm:px-7 sm:py-5 lg:px-7">
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <h1 className="min-w-0 truncate text-2xl font-semibold text-hyrd-text">
+          {title}
+        </h1>
+        <div className="flex shrink-0 items-center gap-2">
+          {action}
+          <button
+            aria-label="Open navigation"
+            className="grid h-11 w-11 place-items-center rounded-lg border border-hyrd-border bg-white text-hyrd-text shadow-sm focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:hidden"
+            onClick={context?.openMobileNavigation}
+            title="Open navigation"
+            type="button"
+          >
+            <Icon className="h-5 w-5" name="menu" />
+          </button>
+        </div>
+      </div>
+    </header>
   );
 }

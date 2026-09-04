@@ -1,18 +1,16 @@
 import { statusLabels } from "../../data/applications";
+import { formatApplicationDate } from "../../lib/application-dates";
 import type { JobApplication } from "../../types/application";
 import { Icon } from "../ui/icons";
 import { StatusLabel } from "./status-label";
 
-function formatDate(date: string | null) {
-  if (!date) return "Not started";
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(`${date}T00:00:00`));
-}
-
-export function TableView({ applications }: { applications: JobApplication[] }) {
+export function TableView({
+  applications,
+  onOpen,
+}: {
+  applications: JobApplication[];
+  onOpen?: (applicationId: string) => void;
+}) {
   return (
     <section
       aria-label="Applications table"
@@ -34,26 +32,31 @@ export function TableView({ applications }: { applications: JobApplication[] }) 
             {applications.map((application) => (
               <tr className="align-top" key={application.id}>
                 <td className="px-4 py-4">
-                  <div className="font-semibold text-hyrd-text">
+                  <div className="break-words font-semibold text-hyrd-text">
                     {application.position}
                   </div>
-                  <div className="mt-1 text-hyrd-muted">{application.company}</div>
+                  <div className="mt-1 break-words text-hyrd-muted">
+                    {application.company}
+                  </div>
                 </td>
                 <td className="px-4 py-4">
                   <StatusLabel status={application.status} />
                   <span className="sr-only">{statusLabels[application.status]}</span>
                 </td>
-                <td className="px-4 py-4 text-hyrd-muted">{application.location}</td>
                 <td className="px-4 py-4 text-hyrd-muted">
-                  {formatDate(application.appliedDate)}
+                  {application.location ?? "Location not set"}
                 </td>
                 <td className="px-4 py-4 text-hyrd-muted">
-                  {formatDate(application.lastUpdated)}
+                  {formatApplicationDate(application.appliedAt, "Not started")}
+                </td>
+                <td className="px-4 py-4 text-hyrd-muted">
+                  {formatApplicationDate(application.updatedAt)}
                 </td>
                 <td className="px-4 py-4">
                   <button
-                    aria-label={`Open actions for ${application.position}`}
+                    aria-label={`View details for ${application.position}`}
                     className="grid h-8 w-8 place-items-center rounded-lg text-hyrd-muted hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+                    onClick={() => onOpen?.(application.id)}
                     type="button"
                   >
                     <Icon className="h-4 w-4" name="more" />
