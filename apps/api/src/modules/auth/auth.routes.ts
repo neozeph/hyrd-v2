@@ -17,5 +17,5 @@ const authRateLimit = createRateLimit({
 authRouter.get("/csrf", issueCsrfToken);
 authRouter.post("/register", authRateLimit, register);
 authRouter.post("/login", authRateLimit, login);
-authRouter.post("/logout", logout);
+authRouter.post("/logout", requireAuthentication, logout);
 authRouter.get("/me", requireAuthentication, getCurrentUser);

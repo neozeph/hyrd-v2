@@ -135,6 +135,12 @@ State-changing API requests also require a CSRF token:
 3. The frontend keeps the token in memory and sends it as `X-CSRF-Token` on
    `POST`, `PUT`, `PATCH`, and `DELETE` requests.
 
+Logged-out browsers receive guest CSRF tokens for login and registration. After
+login or registration, HYRD clears the guest token so the next unsafe request
+bootstraps a new token bound to the current session cookie through a one-way
+HMAC. A token issued for one authenticated session cannot be reused with another
+session, and the raw session token is never included in CSRF responses.
+
 CORS, SameSite, and CSRF each solve different problems:
 
 - CORS restricts which browser origins can read credentialed API responses.

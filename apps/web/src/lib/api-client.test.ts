@@ -123,4 +123,119 @@ describe("apiRequest CSRF handling", () => {
       status: 403,
     });
   });
+
+  it("clears a guest CSRF token after login and fetches a fresh token next", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "guest-token" }))
+      .mockResolvedValueOnce(jsonResponse({ user: { id: "user-1" } }))
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "session-token" }))
+      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiRequest("/api/auth/login", {
+      body: { email: "josef@example.com", password: "StrongPassword123!" },
+      method: "POST",
+    });
+    await apiRequest("/api/applications", {
+      body: { company: "Acme", position: "Engineer" },
+      method: "POST",
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      "http://localhost:3000/api/applications",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "session-token",
+        }),
+      }),
+    );
+  });
+
+  it("clears a guest CSRF token after registration and fetches a fresh token next", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "guest-token" }))
+      .mockResolvedValueOnce(jsonResponse({ user: { id: "user-1" } }))
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "session-token" }))
+      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiRequest("/api/auth/register", {
+      body: {
+        name: "Josef",
+        email: "josef@example.com",
+        password: "StrongPassword123!",
+      },
+      method: "POST",
+    });
+    await apiRequest("/api/applications", {
+      body: { company: "Acme", position: "Engineer" },
+      method: "POST",
+    });
+
+    const csrfCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).endsWith("/api/auth/csrf"),
+    );
+
+    expect(csrfCalls).toHaveLength(2);
+  });
+
+  it("clears the cached CSRF token after logout", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "session-token" }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "next-token" }))
+      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await apiRequest("/api/auth/logout", {
+      method: "POST",
+    });
+    await apiRequest("/api/auth/login", {
+      body: { email: "josef@example.com", password: "StrongPassword123!" },
+      method: "POST",
+    });
+
+    const csrfCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).endsWith("/api/auth/csrf"),
+    );
+
+    expect(csrfCalls).toHaveLength(2);
+  });
+
+  it("clears the cached CSRF token after a 401 response", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "stale-token" }))
+      .mockResolvedValueOnce(
+        jsonResponse({ error: "Invalid or expired session" }, { status: 401 }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ csrfToken: "fresh-token" }))
+      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      apiRequest("/api/applications", {
+        body: { company: "Acme", position: "Engineer" },
+        method: "POST",
+      }),
+    ).rejects.toMatchObject({ status: 401 });
+    await apiRequest("/api/auth/login", {
+      body: { email: "josef@example.com", password: "StrongPassword123!" },
+      method: "POST",
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      4,
+      "http://localhost:3000/api/auth/login",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "fresh-token",
+        }),
+      }),
+    );
+  });
 });
