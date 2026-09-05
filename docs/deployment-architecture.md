@@ -8,8 +8,8 @@ HYRD is ready for a private staging deployment with one important topology const
 
 The recommended staging architecture is:
 
-- Web: Vercel static Vite deployment.
-- API: Render Node.js Web Service.
+- Web: Vercel static Vite deployment at `https://hyrd-v2-web.vercel.app`.
+- API: Render Node.js Web Service at `https://hyrd-staging-api.onrender.com`.
 - Database: Neon PostgreSQL.
 - Browser request flow: the frontend calls its own origin at `/api/*`; Vercel rewrites those requests to the Render API.
 
@@ -107,9 +107,9 @@ Conclusion: strong eventual-production shape. It requires a custom domain and DN
 
 Example:
 
-- Browser loads `https://hyrd-staging.vercel.app`
-- Browser calls `https://hyrd-staging.vercel.app/api/*`
-- Vercel rewrites `/api/*` to `https://hyrd-api.onrender.com/api/*`
+- Browser loads `https://hyrd-v2-web.vercel.app`
+- Browser calls `https://hyrd-v2-web.vercel.app/api/*`
+- Vercel rewrites `/api/*` to `https://hyrd-staging-api.onrender.com/api/*`
 
 The browser sees same-origin requests, so HYRD's host-only cookies are first-party to the frontend origin. This avoids third-party-cookie blocking and keeps the frontend code simple if `VITE_API_URL` is set to the frontend origin. The API should still set `CLIENT_ORIGIN` to the frontend origin because the forwarded unsafe requests can include the browser's `Origin` header.
 
@@ -130,6 +130,8 @@ For private staging, use a same-origin `/api` proxy. For public production, pref
 - Web service: Vercel static deployment from `apps/web`.
 - API service: Render Node.js Web Service from `apps/api`.
 - PostgreSQL: Neon free PostgreSQL.
+- Staging web URL: `https://hyrd-v2-web.vercel.app`.
+- Staging API URL: `https://hyrd-staging-api.onrender.com`.
 - Domain strategy: use the Vercel staging URL as the browser origin and proxy `/api/*` to Render.
 - API direct URL: keep available for health/readiness checks and provider routing, but do not use it as `VITE_API_URL` in the browser.
 - Cookies: host-only, `HttpOnly`, `Secure`, `SameSite=Lax` when same-origin proxying works; use `SameSite=None` only for truly cross-site frontend/API topology.
@@ -167,10 +169,10 @@ This keeps authentication same-site, avoids third-party-cookie reliance, and sep
 
 ```mermaid
 flowchart LR
-  Browser["Browser\nhttps://hyrd-staging.vercel.app"]
+  Browser["Browser\nhttps://hyrd-v2-web.vercel.app"]
   Vercel["Vercel static app\n/apps/web"]
   Proxy["Vercel rewrite\n/api/*"]
-  Render["Render API service\n/apps/api"]
+  Render["Render API service\nhttps://hyrd-staging-api.onrender.com"]
   Neon[("Neon PostgreSQL")]
 
   Browser -->|"GET /"| Vercel
@@ -185,11 +187,11 @@ flowchart LR
 
 | Variable | App | Required | Classification | Staging value shape | Behavior |
 | --- | --- | --- | --- | --- | --- |
-| `VITE_API_URL` | Web | Yes | Public build-time value | `https://hyrd-staging.vercel.app` when proxying | Base URL used by the browser API client. It is included in the frontend bundle. |
+| `VITE_API_URL` | Web | Yes | Public build-time value | `https://hyrd-v2-web.vercel.app` when proxying | Base URL used by the browser API client. It is included in the frontend bundle. |
 | `DATABASE_URL` | API | Yes | Secret | Neon PostgreSQL URL with TLS, such as pooled runtime URL if compatible | Used by Prisma adapter and migrations. Never expose to the browser. |
 | `NODE_ENV` | API | Yes | Staging-specific config | `production` | Enables production cookie security and disables Swagger by default. |
 | `PORT` | API | Provider assigned | Provider/runtime config | Render default or provided value, commonly `10000` | Express listens on this port. |
-| `CLIENT_ORIGIN` | API | Yes | Staging-specific config | `https://hyrd-staging.vercel.app` | CORS allowlist and unsafe-request Origin validation. |
+| `CLIENT_ORIGIN` | API | Yes | Staging-specific config | `https://hyrd-v2-web.vercel.app` | CORS allowlist and unsafe-request Origin validation. |
 | `LOG_LEVEL` | API | No | Staging-specific config | `info` | Controls pino logging level. |
 | `TRUST_PROXY` | API | Yes for Render | Staging-specific config | `1` | Lets Express trust the provider proxy for IP/protocol-aware behavior. |
 | `COOKIE_SAME_SITE` | API | No | Staging-specific config | `lax` for same-origin proxy; `none` for cross-site domains | Defaults to `none` in production if omitted. |
@@ -263,8 +265,27 @@ Readiness check:
 
 SPA fallback:
 
+- Vercel should use `apps/web/vercel.json` because the Vercel project Root Directory is `apps/web`.
 - Vercel should rewrite non-API paths to `index.html`.
 - `/api/*` must be evaluated before the SPA fallback.
+
+Current Vercel rewrite configuration:
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://hyrd-staging-api.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
 
 Deployment order:
 
