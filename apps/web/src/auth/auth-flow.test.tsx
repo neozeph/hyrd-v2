@@ -180,6 +180,229 @@ describe("authentication flow", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the registration password guidance", async () => {
+    mockFetch(jsonResponse({ error: "Authentication required" }, { status: 401 }));
+
+    renderApp({ initialEntries: ["/register"] });
+
+    expect(await screen.findByText("Use at least 12 characters.")).not.toBeNull();
+  });
+
+  it("rejects short registration passwords before sending an API request", async () => {
+    const fetchMock = mockFetch(
+      jsonResponse({ error: "Authentication required" }, { status: 401 }),
+    );
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    await user.type(screen.getByLabelText("Name"), "Josef Soriente");
+    await user.type(screen.getByLabelText("Email"), "josef@example.com");
+    await user.type(screen.getByLabelText("Password"), "short");
+    await user.type(screen.getByLabelText("Confirm password"), "short");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findAllByText("Use at least 12 characters.")).toHaveLength(2);
+    expect(screen.getByLabelText("Password").getAttribute("aria-invalid")).toBe(
+      "true",
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears password validation errors when the user corrects the password", async () => {
+    mockFetch(jsonResponse({ error: "Authentication required" }, { status: 401 }));
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    await user.type(screen.getByLabelText("Name"), "Josef Soriente");
+    await user.type(screen.getByLabelText("Email"), "josef@example.com");
+    await user.type(screen.getByLabelText("Password"), "short");
+    await user.type(screen.getByLabelText("Confirm password"), "short");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findAllByText("Use at least 12 characters.")).toHaveLength(2);
+
+    await user.clear(screen.getByLabelText("Password"));
+    await user.type(screen.getByLabelText("Password"), "LongEnoughPassword");
+
+    expect(screen.getAllByText("Use at least 12 characters.")).toHaveLength(1);
+    expect(screen.getByLabelText("Password").getAttribute("aria-invalid")).toBe(
+      "false",
+    );
+  });
+
+  it("maps backend password field errors under the password field", async () => {
+    mockFetch(
+      jsonResponse({ error: "Authentication required" }, { status: 401 }),
+      jsonResponse(
+        {
+          error: "Invalid registration data",
+          details: {
+            formErrors: [],
+            fieldErrors: {
+              password: ["Password must contain at least 12 characters"],
+            },
+          },
+        },
+        { status: 400 },
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    await user.type(screen.getByLabelText("Name"), "Josef Soriente");
+    await user.type(screen.getByLabelText("Email"), "josef@example.com");
+    await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
+    await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByText("Password must contain at least 12 characters"),
+    ).not.toBeNull();
+    expect(screen.queryByText("Invalid registration data")).toBeNull();
+  });
+
+  it("maps backend email field errors under the email field", async () => {
+    mockFetch(
+      jsonResponse({ error: "Authentication required" }, { status: 401 }),
+      jsonResponse(
+        {
+          error: "Invalid registration data",
+          details: {
+            formErrors: [],
+            fieldErrors: {
+              email: ["Enter a valid email address"],
+            },
+          },
+        },
+        { status: 400 },
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    await user.type(screen.getByLabelText("Name"), "Josef Soriente");
+    await user.type(screen.getByLabelText("Email"), "josef@example.com");
+    await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
+    await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByText("Enter a valid email address")).not.toBeNull();
+    expect(screen.queryByText("Invalid registration data")).toBeNull();
+  });
+
+  it("keeps unknown registration errors at form level", async () => {
+    mockFetch(
+      jsonResponse({ error: "Authentication required" }, { status: 401 }),
+      jsonResponse({ error: "Unable to create your account" }, { status: 500 }),
+    );
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    await user.type(screen.getByLabelText("Name"), "Josef Soriente");
+    await user.type(screen.getByLabelText("Email"), "josef@example.com");
+    await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
+    await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByText("Unable to create your account")).not.toBeNull();
+  });
+
+  it("registers successfully with valid registration values", async () => {
+    const fetchMock = mockFetch(
+      jsonResponse({ error: "Authentication required" }, { status: 401 }),
+      jsonResponse({ user: testUser }, { status: 201 }),
+      jsonResponse(emptyStats),
+      jsonResponse(emptyList),
+    );
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    await user.type(screen.getByLabelText("Name"), "Josef Soriente");
+    await user.type(screen.getByLabelText("Email"), "josef@example.com");
+    await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
+    await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByRole("heading", { name: "Overview" })).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3000/api/auth/register",
+      expect.objectContaining({
+        body: JSON.stringify({
+          email: "josef@example.com",
+          name: "Josef Soriente",
+          password: "StrongPassword123!",
+        }),
+        method: "POST",
+      }),
+    );
+  });
+
+  it("updates the password strength indicator while typing", async () => {
+    mockFetch(jsonResponse({ error: "Authentication required" }, { status: 401 }));
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    expect(screen.queryByRole("progressbar", { name: /password strength/i })).toBeNull();
+
+    await user.type(screen.getByLabelText("Password"), "short");
+
+    const weakMeter = screen.getByRole("progressbar", {
+      name: "Password strength: Weak",
+    });
+    expect(weakMeter.getAttribute("aria-valuemin")).toBe("0");
+    expect(weakMeter.getAttribute("aria-valuemax")).toBe("100");
+    expect(weakMeter.getAttribute("aria-valuenow")).not.toBeNull();
+
+    await user.clear(screen.getByLabelText("Password"));
+    await user.type(screen.getByLabelText("Password"), "orchid copper meadow river");
+
+    expect(
+      screen.getByRole("progressbar", { name: "Password strength: Strong" }),
+    ).not.toBeNull();
+  });
+
+  it("does not send or log passwords while showing strength guidance", async () => {
+    const fetchMock = mockFetch(
+      jsonResponse({ error: "Authentication required" }, { status: 401 }),
+    );
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+
+    await user.type(screen.getByLabelText("Password"), "SecretPassphrase123!");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(consoleLog).not.toHaveBeenCalled();
+    expect(consoleWarn).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
   it("logs out and clears protected content", async () => {
     mockFetch(
       jsonResponse({ user: testUser }),

@@ -52,6 +52,8 @@ async function fetchCsrfToken(apiBaseUrl: string): Promise<string> {
   const parsedBody = await parseJsonSafely(response);
 
   if (!response.ok) {
+    if (response.status === 401) clearCsrfToken();
+
     throw new ApiError({
       message: "Unable to prepare a secure request.",
       status: response.status,
@@ -115,6 +117,8 @@ export async function apiRequest<T>(
         ? (parsedBody as ErrorBody)
         : {};
 
+    if (response.status === 401) clearCsrfToken();
+
     throw new ApiError({
       code: errorBody.code,
       details: errorBody.details,
@@ -123,7 +127,13 @@ export async function apiRequest<T>(
     });
   }
 
-  if (path === "/api/auth/logout") clearCsrfToken();
+  if (
+    path === "/api/auth/login" ||
+    path === "/api/auth/logout" ||
+    path === "/api/auth/register"
+  ) {
+    clearCsrfToken();
+  }
 
   return parsedBody as T;
 }

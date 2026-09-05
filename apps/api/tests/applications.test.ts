@@ -60,6 +60,7 @@ describe("Applications API", () => {
         password: TEST_PASSWORD,
       })
       .expect(201);
+    attachCsrfToUnsafeRequests(agent, await getCsrfToken(agent));
   });
 
   beforeEach(async () => {
@@ -524,6 +525,7 @@ describe("Applications API", () => {
         password: TEST_PASSWORD,
       })
       .expect(201);
+    attachCsrfToUnsafeRequests(secondAgent, await getCsrfToken(secondAgent));
 
     await agent.post("/api/applications").send({
       company: "First User Company",
@@ -638,6 +640,7 @@ describe("Applications API", () => {
         password: TEST_PASSWORD,
       })
       .expect(201);
+    attachCsrfToUnsafeRequests(secondAgent, await getCsrfToken(secondAgent));
 
     const createResponse = await secondAgent.post("/api/applications").send({
       company: "Private Company",

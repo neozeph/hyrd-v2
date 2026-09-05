@@ -62,6 +62,7 @@ export const register: RequestHandler = async (request, response, next) => {
       authentication.sessionToken,
       getSessionCookieOptions(authentication.sessionExpiresAt),
     );
+    clearCsrf(response);
 
     response.status(201).json({
       user: authentication.user,
@@ -91,6 +92,7 @@ export const login: RequestHandler = async (request, response, next) => {
       authentication.sessionToken,
       getSessionCookieOptions(authentication.sessionExpiresAt),
     );
+    clearCsrf(response);
 
     response.status(200).json({
       user: authentication.user,

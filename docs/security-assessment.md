@@ -12,9 +12,9 @@ Frameworks:
 
 ## A. Executive Summary
 
-HYRD has a solid baseline for an early production-readiness stage. The application now uses HTTP-only cookie sessions, signed CSRF tokens for unsafe requests, Origin validation, restricted credentialed CORS, Helmet, strict Zod request validation, Prisma query construction, ownership-scoped application queries, security-conscious logging redaction, and CI coverage for web and API workspaces.
+HYRD has a solid baseline for an early production-readiness stage. The application now uses HTTP-only cookie sessions, session-bound signed CSRF tokens for unsafe requests, Origin validation, restricted credentialed CORS, Helmet, strict Zod request validation, Prisma query construction, ownership-scoped application queries, security-conscious logging redaction, and CI coverage for web and API workspaces.
 
-The highest-priority confirmed risk is supply-chain exposure reported by `npm audit`: high-severity vulnerabilities exist in transitive Prisma CLI dependencies and a moderate vulnerability exists in `qs`. The most important application security improvements are defense-in-depth items around CSRF token binding, distributed rate limiting, production Swagger exposure, and readiness checks.
+The highest-priority confirmed risk is supply-chain exposure reported by `npm audit`: high-severity vulnerabilities exist in transitive Prisma CLI dependencies. The most important remaining application security improvements are defense-in-depth items around distributed rate limiting and production infrastructure hardening.
 
 This review found no confirmed broken object-level authorization in the application CRUD implementation. Application list, stats, retrieve, update, and delete paths are scoped by authenticated `userId`.
 
@@ -54,7 +54,7 @@ HYRD is an npm monorepo with:
 - `apps/web`: React/Vite SPA using TanStack Query and a shared fetch client.
 - `apps/api`: Express API using Prisma and PostgreSQL.
 - Browser authentication: HTTP-only `hyrd_session` cookie.
-- CSRF: signed double-submit token issued by `GET /api/auth/csrf`, returned in JSON, and mirrored in host-only `hyrd_csrf` cookie.
+- CSRF: signed double-submit token issued by `GET /api/auth/csrf`, returned in JSON, and mirrored in host-only `hyrd_csrf` cookie. Guest tokens support login and registration; authenticated tokens are bound to the current session cookie with a one-way HMAC.
 - Trust boundary 1: browser to static web host.
 - Trust boundary 2: browser to API origin using credentialed CORS.
 - Trust boundary 3: API to PostgreSQL via Prisma.
@@ -96,11 +96,11 @@ Cross-origin cookie implications:
 - OWASP Top 10: A06:2025 Insecure Design
 - OWASP API Top 10: API2:2023 Broken Authentication
 - ASVS 5.0: V3 Session Management, V4 Access Control
-- Status: Open
-- Evidence: CSRF token validity is based on an HMAC-signed nonce and cookie/header equality. The token is not cryptographically tied to the session id or authenticated user.
-- Realistic attack scenario: If an attacker can set or reuse a valid CSRF cookie/header pair in a victim browser through another weakness or sibling host issue, the API would accept the CSRF proof independent of the victim session.
-- Recommended remediation: Bind CSRF tokens to the current session after login, or rotate CSRF on login and store a per-session CSRF secret/hash server-side. Keep the pre-auth bootstrap path for login/register.
-- Verification method: Add tests showing a CSRF token issued before one session cannot be reused with another authenticated session after binding.
+- Status: Mitigated
+- Evidence: Sprint 9 Part 3C added session-bound CSRF tokens. Logged-out users receive signed guest tokens for login and registration. Authenticated CSRF tokens include a signed payload with a one-way HMAC binding derived from the current session cookie value, without exposing the raw session token. Login and registration clear the guest CSRF cookie, causing the frontend to bootstrap a new session-bound token before the next unsafe request.
+- Realistic attack scenario: Previously, a valid CSRF token was not tied to a session. That cross-session reuse scenario is now covered by tests that reject Session A tokens when used with Session B and reject stale pre-login guest tokens for authenticated application mutations.
+- Recommended remediation: Complete. Continue to protect `CSRF_SECRET` and rotate it only with a planned session/token invalidation strategy.
+- Verification method: Automated tests cover guest bootstrap, guest login/registration, stale guest rejection after authentication, cross-session rejection, authenticated mutation success, logout binding, cookie clearing, and malformed/tampered token failures.
 
 ### HYRD-SEC-003: Rate Limiting Is In-Memory And Not Deployment-Distributed
 
@@ -307,12 +307,11 @@ Notes:
 2. Gate or protect Swagger docs in production.
 3. Add DB-backed readiness endpoint separate from liveness.
 4. Replace or augment in-memory rate limits with shared/edge limits for production.
-5. Bind CSRF tokens to authenticated sessions or rotate/store per-session CSRF material.
-6. Add account/email-keyed authentication throttling with generic responses.
-7. Document and verify production database TLS.
-8. Add structured security event logging and alerting.
-9. Pin GitHub Actions to immutable SHAs.
-10. Make production source map policy explicit.
+5. Add account/email-keyed authentication throttling with generic responses.
+6. Document and verify production database TLS.
+7. Add structured security event logging and alerting.
+8. Pin GitHub Actions to immutable SHAs.
+9. Make production source map policy explicit.
 
 ## J. Residual Risks And Testing Limitations
 

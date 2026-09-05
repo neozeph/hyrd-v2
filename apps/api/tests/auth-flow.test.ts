@@ -136,9 +136,11 @@ describe("authentication API", () => {
       })
       .expect(201);
 
+    const authenticatedRegistrationCsrfToken = await getCsrfToken(registrationAgent);
+
     await registrationAgent
       .post("/api/auth/logout")
-      .set("X-CSRF-Token", registrationCsrfToken)
+      .set("X-CSRF-Token", authenticatedRegistrationCsrfToken)
       .expect(204);
 
     const agent = request.agent(app);
@@ -155,10 +157,11 @@ describe("authentication API", () => {
     expect(loginResponse.status).toBe(200);
 
     await agent.get("/api/auth/me").expect(200);
+    const authenticatedCsrfToken = await getCsrfToken(agent);
 
     const logoutResponse = await agent
       .post("/api/auth/logout")
-      .set("X-CSRF-Token", csrfToken);
+      .set("X-CSRF-Token", authenticatedCsrfToken);
 
     expect(logoutResponse.status).toBe(204);
 
