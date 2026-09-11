@@ -56,7 +56,7 @@ export function AuthField({
           aria-describedby={describedBy || undefined}
           aria-invalid={errorMessages.length > 0}
           autoComplete={autoComplete}
-          className={`w-full rounded-[10px] border border-hyrd-border bg-white px-3.5 text-sm text-hyrd-text outline-none transition focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] ${
+          className={`w-full border border-hyrd-border bg-[#fbfaf6] px-3.5 text-sm text-hyrd-text outline-none transition focus:border-hyrd-gold focus:bg-white focus:ring-3 focus:ring-[#b28a4a33] ${
             compact ? "py-2" : "py-2.5"
           }`}
           id={id}
@@ -69,7 +69,7 @@ export function AuthField({
         {isPassword ? (
           <button
             aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-hyrd-muted transition hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+            className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center text-hyrd-muted transition hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
             onClick={() => setShowPassword((current) => !current)}
             type="button"
           >

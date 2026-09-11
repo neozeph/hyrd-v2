@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -83,7 +83,7 @@ describe("application CRUD UI", () => {
     renderApp({ initialEntries: ["/applications"] });
 
     await screen.findByText("Frontend Engineer");
-    await userEvent.click(screen.getByRole("button", { name: "View details" }));
+    await userEvent.click(screen.getByRole("button", { name: "View Details" }));
 
     expect(await screen.findByRole("dialog", { name: "Application details" })).not.toBeNull();
     expect(screen.getByText("https://example.com/job")).not.toBeNull();
@@ -107,7 +107,12 @@ describe("application CRUD UI", () => {
     await user.type(screen.getByLabelText("Company"), "Acme Atlas");
     await user.type(screen.getByLabelText("Position"), "Frontend Engineer");
     await user.type(screen.getByLabelText("Applied date"), "2026-08-20");
-    await user.click(screen.getByRole("button", { name: "Create application" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Add application" })).getByRole(
+        "button",
+        { name: "Add application" },
+      ),
+    );
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -140,7 +145,12 @@ describe("application CRUD UI", () => {
     await user.type(screen.getByLabelText("Company"), "Acme Atlas");
     await user.type(screen.getByLabelText("Position"), "Frontend Engineer");
     await user.type(screen.getByLabelText("Job URL"), "ftp://example.com/job");
-    await user.click(screen.getByRole("button", { name: "Create application" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Add application" })).getByRole(
+        "button",
+        { name: "Add application" },
+      ),
+    );
 
     expect(await screen.findByText("Job URL must be valid.")).not.toBeNull();
     expect(screen.getByLabelText<HTMLInputElement>("Company").value).toBe("Acme Atlas");
@@ -162,7 +172,7 @@ describe("application CRUD UI", () => {
 
     renderApp({ initialEntries: ["/applications"] });
 
-    await user.click(await screen.findByRole("button", { name: "View details" }));
+    await user.click(await screen.findByRole("button", { name: "View Details" }));
     await user.click(await screen.findByRole("button", { name: "Edit" }));
     expect(screen.getByLabelText<HTMLInputElement>("Company").value).toBe("Acme Atlas");
 
@@ -200,7 +210,7 @@ describe("application CRUD UI", () => {
 
     renderApp({ initialEntries: ["/applications"] });
 
-    await user.click(await screen.findByRole("button", { name: "View details" }));
+    await user.click(await screen.findByRole("button", { name: "View Details" }));
     await user.click(await screen.findByRole("button", { name: "Delete" }));
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.getByRole("dialog", { name: "Application details" })).not.toBeNull();

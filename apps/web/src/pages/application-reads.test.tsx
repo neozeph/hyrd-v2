@@ -113,8 +113,11 @@ describe("application reads", () => {
 
     renderApp({ initialEntries: ["/dashboard"] });
 
+    expect(
+      await screen.findByRole("heading", { name: "Welcome back, Reader." }),
+    ).not.toBeNull();
     expect(await screen.findByText("Total applications")).not.toBeNull();
-    expect(screen.getByText("Active applications")).not.toBeNull();
+    expect(screen.getByText("Active Applications")).not.toBeNull();
     expect(screen.getByText("Frontend Engineer")).not.toBeNull();
     expect(screen.getByText("Marlow Systems")).not.toBeNull();
   });
@@ -172,9 +175,9 @@ describe("application reads", () => {
 
     expect(await screen.findByText("Frontend Engineer")).not.toBeNull();
     expect(screen.getByText("Showing 1-6 of 8")).not.toBeNull();
-    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Next" }).disabled).toBe(
-      false,
-    );
+    expect(
+      screen.getByRole<HTMLButtonElement>("button", { name: "Next page" }).disabled,
+    ).toBe(false);
   });
 
   it("maps search, status, closed filter, sorting, and pagination to API queries", async () => {
@@ -192,7 +195,7 @@ describe("application reads", () => {
     renderApp({ initialEntries: ["/applications"] });
 
     await screen.findByText("Frontend Engineer");
-    await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Next page" }));
     await user.type(screen.getByPlaceholderText("Search role, company, location"), "design");
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -259,6 +262,18 @@ describe("application reads", () => {
     });
   });
 
+  it("renders supported settings fields and omits Analytics navigation", async () => {
+    mockFetch(jsonResponse({ user: testUser }));
+
+    renderApp({ initialEntries: ["/settings"] });
+
+    expect(await screen.findByRole("heading", { name: "Settings" })).not.toBeNull();
+    expect(screen.getAllByText("Reader User").length).toBeGreaterThan(0);
+    expect(screen.getByText("reader@example.com")).not.toBeNull();
+    expect(screen.getByText("Sep 3, 2026")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: "Analytics" })).toBeNull();
+  });
+
   it("redirects to login when an application read returns 401", async () => {
     mockFetch(
       jsonResponse({ user: testUser }),
@@ -270,7 +285,7 @@ describe("application reads", () => {
     renderApp({ initialEntries: ["/applications"] });
 
     expect(
-      await screen.findByRole("heading", { name: "Log in to your application tracker" }),
+      await screen.findByRole("heading", { name: "Welcome back" }),
     ).not.toBeNull();
   });
 });

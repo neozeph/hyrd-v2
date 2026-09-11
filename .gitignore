@@ -4,6 +4,7 @@ coverage/
 .agents/
 .claude/
 .windsurf/
+.codex/
 
 .env
 .env.*
