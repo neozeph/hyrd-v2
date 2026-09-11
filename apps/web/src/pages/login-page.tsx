@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router";
 import { useAuth } from "../auth/use-auth";
 import { AuthField } from "../components/auth/auth-field";
 import { AuthShell } from "../components/auth/auth-shell";
+import { SignatureButton } from "../components/public/signature-cta";
 import { ApiError } from "../lib/api-error";
 
 type LoginErrors = Partial<Record<"email" | "password" | "form", string>>;
@@ -52,12 +53,12 @@ export function LoginPage() {
 
   return (
     <AuthShell
-      eyebrow="Welcome back"
-      heading="Log in to your application tracker"
-      intro="Review your pipeline, follow-ups, and offers without rebuilding the context from scratch."
+      eyebrow="Sign in"
+      heading="Welcome back"
+      intro="Enter your HYRD workspace."
       mode="login"
     >
-      <form className="space-y-4" noValidate onSubmit={handleSubmit}>
+      <form className="auth-login-form" noValidate onSubmit={handleSubmit}>
         <AuthField
           autoComplete="email"
           error={errors.email}
@@ -79,13 +80,13 @@ export function LoginPage() {
         <p aria-live="polite" className="min-h-5 text-sm text-hyrd-muted">
           {errors.form}
         </p>
-        <button
-          className="w-full rounded-[10px] bg-hyrd-gold px-4 py-3 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55] disabled:cursor-not-allowed disabled:opacity-70"
+        <SignatureButton
+          className="auth-signature-button w-full"
           disabled={isSubmitting}
           type="submit"
         >
-          {isSubmitting ? "Logging in..." : "Log in"}
-        </button>
+          {isSubmitting ? "Entering..." : "Enter HYRD"}
+        </SignatureButton>
       </form>
     </AuthShell>
   );

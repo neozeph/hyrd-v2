@@ -79,7 +79,9 @@ describe("authentication flow", () => {
 
     expect(screen.getByText("Restoring your HYRD session...")).not.toBeNull();
 
-    expect(await screen.findByRole("heading", { name: "Overview" })).not.toBeNull();
+    expect(
+      await screen.findByRole("heading", { name: "Welcome back, Josef." }),
+    ).not.toBeNull();
     expect(screen.getByText("Josef Soriente")).not.toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3000/api/auth/me",
@@ -93,7 +95,7 @@ describe("authentication flow", () => {
     renderApp({ initialEntries: ["/applications"] });
 
     expect(
-      await screen.findByRole("heading", { name: "Log in to your application tracker" }),
+      await screen.findByRole("heading", { name: "Welcome back" }),
     ).not.toBeNull();
   });
 
@@ -109,12 +111,12 @@ describe("authentication flow", () => {
     renderApp({ initialEntries: ["/applications"] });
 
     await screen.findByRole("heading", {
-      name: "Log in to your application tracker",
+      name: "Welcome back",
     });
 
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
-    await user.click(screen.getByRole("button", { name: "Log in" }));
+    await user.click(screen.getByRole("button", { name: "Enter HYRD" }));
 
     expect(await screen.findByRole("heading", { name: "Applications" })).not.toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
@@ -146,12 +148,12 @@ describe("authentication flow", () => {
     renderApp({ initialEntries: ["/login"] });
 
     await screen.findByRole("heading", {
-      name: "Log in to your application tracker",
+      name: "Welcome back",
     });
 
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "wrong-password");
-    await user.click(screen.getByRole("button", { name: "Log in" }));
+    await user.click(screen.getByRole("button", { name: "Enter HYRD" }));
 
     expect(await screen.findByText("Invalid email or password")).not.toBeNull();
     expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(
@@ -168,16 +170,44 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Name"), "Josef Soriente");
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
     await user.type(screen.getByLabelText("Confirm password"), "DifferentPassword123!");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
 
     expect(await screen.findByText("Passwords do not match.")).not.toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks registration until terms and privacy are acknowledged", async () => {
+    const fetchMock = mockFetch(
+      jsonResponse({ error: "Authentication required" }, { status: 401 }),
+    );
+    const user = userEvent.setup();
+
+    renderApp({ initialEntries: ["/register"] });
+
+    await screen.findByRole("heading", { name: "Create your workspace" });
+
+    await user.type(screen.getByLabelText("Name"), "Josef Soriente");
+    await user.type(screen.getByLabelText("Email"), "josef@example.com");
+    await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
+    await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
+
+    expect(
+      await screen.findByText(/Agree to the Terms & Conditions/i),
+    ).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "Terms & Conditions" }).getAttribute("href")).toBe(
+      "/terms",
+    );
+    expect(screen.getByRole("link", { name: "Privacy Policy" }).getAttribute("href")).toBe(
+      "/privacy",
+    );
   });
 
   it("shows the registration password guidance", async () => {
@@ -188,6 +218,21 @@ describe("authentication flow", () => {
     expect(await screen.findByText("Use at least 12 characters.")).not.toBeNull();
   });
 
+  it("shows the authentication artwork in the auth layout", async () => {
+    mockFetch(jsonResponse({ error: "Authentication required" }, { status: 401 }));
+
+    renderApp({ initialEntries: ["/login"] });
+
+    await screen.findByRole("heading", {
+      name: "Welcome back",
+    });
+
+    expect(
+      document.querySelector('img[src="/brand/hyrd-auth-geometric.svg"]'),
+    ).not.toBeNull();
+    expect(screen.getAllByText("HYRD").length).toBeGreaterThan(0);
+  });
+
   it("rejects short registration passwords before sending an API request", async () => {
     const fetchMock = mockFetch(
       jsonResponse({ error: "Authentication required" }, { status: 401 }),
@@ -196,13 +241,13 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Name"), "Josef Soriente");
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "short");
     await user.type(screen.getByLabelText("Confirm password"), "short");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
 
     expect(await screen.findAllByText("Use at least 12 characters.")).toHaveLength(2);
     expect(screen.getByLabelText("Password").getAttribute("aria-invalid")).toBe(
@@ -217,13 +262,13 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Name"), "Josef Soriente");
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "short");
     await user.type(screen.getByLabelText("Confirm password"), "short");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
 
     expect(await screen.findAllByText("Use at least 12 characters.")).toHaveLength(2);
 
@@ -256,13 +301,14 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Name"), "Josef Soriente");
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
     await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
 
     expect(
       await screen.findByText("Password must contain at least 12 characters"),
@@ -290,13 +336,14 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Name"), "Josef Soriente");
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
     await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
 
     expect(await screen.findByText("Enter a valid email address")).not.toBeNull();
     expect(screen.queryByText("Invalid registration data")).toBeNull();
@@ -311,13 +358,14 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Name"), "Josef Soriente");
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
     await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
 
     expect(await screen.findByText("Unable to create your account")).not.toBeNull();
   });
@@ -333,15 +381,18 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Name"), "Josef Soriente");
     await user.type(screen.getByLabelText("Email"), "josef@example.com");
     await user.type(screen.getByLabelText("Password"), "StrongPassword123!");
     await user.type(screen.getByLabelText("Confirm password"), "StrongPassword123!");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Get HYRD" }));
 
-    expect(await screen.findByRole("heading", { name: "Overview" })).not.toBeNull();
+    expect(
+      await screen.findByRole("heading", { name: "Welcome back, Josef." }),
+    ).not.toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3000/api/auth/register",
       expect.objectContaining({
@@ -361,7 +412,7 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     expect(screen.queryByRole("progressbar", { name: /password strength/i })).toBeNull();
 
@@ -393,7 +444,7 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/register"] });
 
-    await screen.findByRole("heading", { name: "Create your HYRD workspace" });
+    await screen.findByRole("heading", { name: "Create your workspace" });
 
     await user.type(screen.getByLabelText("Password"), "SecretPassphrase123!");
 
@@ -414,12 +465,12 @@ describe("authentication flow", () => {
 
     renderApp({ initialEntries: ["/dashboard"] });
 
-    await screen.findByRole("heading", { name: "Overview" });
+    await screen.findByRole("heading", { name: "Welcome back, Josef." });
     await user.click(screen.getByRole("button", { name: "Logout" }));
 
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "Log in to your application tracker" }),
+        screen.getByRole("heading", { name: "Welcome back" }),
       ).not.toBeNull();
     });
   });

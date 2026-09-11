@@ -16,6 +16,7 @@ import {
 } from "../../lib/application-queries";
 import type { ApplicationStatus, JobApplication } from "../../types/application";
 import { applicationStatuses } from "../../types/application";
+import { SignatureButton } from "../public/signature-cta";
 import { Icon } from "../ui/icons";
 
 type DrawerMode = "create" | "view" | "edit" | "delete";
@@ -40,10 +41,10 @@ const emptyForm: FormState = {
   status: "saved",
 };
 const fieldClass =
-  "mt-1 h-10 w-full rounded-[10px] border border-hyrd-border bg-white px-3 text-sm text-hyrd-text outline-none transition hover:border-slate-300 focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
+  "mt-1 h-10 w-full border border-hyrd-border bg-white px-3 text-sm text-hyrd-text outline-none transition hover:border-slate-300 focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
 const selectClass = `${fieldClass} appearance-none pr-9`;
 const textareaClass =
-  "mt-1 min-h-24 w-full rounded-[10px] border border-hyrd-border bg-white px-3 py-2 text-sm text-hyrd-text outline-none transition hover:border-slate-300 focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
+  "mt-1 min-h-24 w-full border border-hyrd-border bg-white px-3 py-2 text-sm text-hyrd-text outline-none transition hover:border-slate-300 focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
 const labelClass = "block text-sm font-medium text-hyrd-text";
 
 function formFromApplication(application: JobApplication): FormState {
@@ -106,8 +107,8 @@ function updatePayload(
 }
 
 function validateForm(form: FormState) {
-  if (!form.company.trim()) return "Company is required.";
   if (!form.position.trim()) return "Position is required.";
+  if (!form.company.trim()) return "Company is required.";
   if (form.jobUrl.trim()) {
     try {
       const url = new URL(form.jobUrl.trim());
@@ -275,18 +276,9 @@ export function ApplicationDrawer({
 
   const formContent = (
     <form
-      className="mt-5 space-y-4"
+      className="mt-4 grid gap-3"
       onSubmit={mode === "create" ? handleCreate : handleUpdate}
     >
-      <label className="block text-sm font-medium text-hyrd-text">
-        Company
-        <input
-          className={fieldClass}
-          disabled={isPending}
-          onChange={(event) => setField("company", event.target.value)}
-          value={form.company}
-        />
-      </label>
       <label className={labelClass}>
         Position
         <input
@@ -297,56 +289,69 @@ export function ApplicationDrawer({
         />
       </label>
       <label className={labelClass}>
-        Status
-        <span className="relative block">
-          <select
-            className={selectClass}
+        Company
+        <input
+          className={fieldClass}
+          disabled={isPending}
+          onChange={(event) => setField("company", event.target.value)}
+          value={form.company}
+        />
+      </label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={labelClass}>
+          Status
+          <span className="relative block">
+            <select
+              className={selectClass}
+              disabled={isPending}
+              onChange={(event) =>
+                setField("status", event.target.value as ApplicationStatus)
+              }
+              value={form.status}
+            >
+              {applicationStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {statusLabels[status]}
+                </option>
+              ))}
+            </select>
+            <Icon
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 -rotate-90 text-hyrd-muted"
+              name="chevron"
+            />
+          </span>
+        </label>
+        <label className={labelClass}>
+          Applied date
+          <input
+            className={fieldClass}
             disabled={isPending}
-            onChange={(event) =>
-              setField("status", event.target.value as ApplicationStatus)
-            }
-            value={form.status}
-          >
-            {applicationStatuses.map((status) => (
-              <option key={status} value={status}>
-                {statusLabels[status]}
-              </option>
-            ))}
-          </select>
-          <Icon
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 -rotate-90 text-hyrd-muted"
-            name="chevron"
+            onChange={(event) => setField("appliedDate", event.target.value)}
+            type="date"
+            value={form.appliedDate}
           />
-        </span>
-      </label>
-      <label className={labelClass}>
-        Location
-        <input
-          className={fieldClass}
-          disabled={isPending}
-          onChange={(event) => setField("location", event.target.value)}
-          value={form.location}
-        />
-      </label>
-      <label className={labelClass}>
-        Job URL
-        <input
-          className={fieldClass}
-          disabled={isPending}
-          onChange={(event) => setField("jobUrl", event.target.value)}
-          value={form.jobUrl}
-        />
-      </label>
-      <label className={labelClass}>
-        Applied date
-        <input
-          className={fieldClass}
-          disabled={isPending}
-          onChange={(event) => setField("appliedDate", event.target.value)}
-          type="date"
-          value={form.appliedDate}
-        />
-      </label>
+        </label>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className={labelClass}>
+          Location
+          <input
+            className={fieldClass}
+            disabled={isPending}
+            onChange={(event) => setField("location", event.target.value)}
+            value={form.location}
+          />
+        </label>
+        <label className={labelClass}>
+          Job URL
+          <input
+            className={fieldClass}
+            disabled={isPending}
+            onChange={(event) => setField("jobUrl", event.target.value)}
+            value={form.jobUrl}
+          />
+        </label>
+      </div>
       <label className={labelClass}>
         Notes
         <textarea
@@ -361,57 +366,61 @@ export function ApplicationDrawer({
           {formError}
         </p>
       ) : null}
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-col justify-end gap-2 sm:flex-row">
         <button
-          className="h-10 rounded-[10px] border border-hyrd-border px-4 text-sm font-semibold text-hyrd-text hover:bg-slate-50"
+          className="h-11 border border-hyrd-border px-4 text-sm font-semibold uppercase tracking-[0.08em] text-hyrd-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
           disabled={isPending}
           onClick={() => (mode === "create" ? onClose() : setMode("view"))}
           type="button"
         >
           Cancel
         </button>
-        <button
-          className="h-10 rounded-[10px] bg-hyrd-gold px-4 text-sm font-semibold text-white hover:bg-hyrd-gold-dark disabled:opacity-60"
+        <SignatureButton
+          className="min-h-11 px-4 py-2 text-xs"
           disabled={isPending}
           type="submit"
         >
-          {isPending ? "Saving..." : mode === "create" ? "Create application" : "Save changes"}
-        </button>
+          {isPending
+            ? "Saving..."
+            : mode === "create"
+              ? "Add application"
+              : "Save changes"}
+        </SignatureButton>
       </div>
     </form>
   );
 
   return (
     <div
-      aria-labelledby="application-drawer-title"
+      aria-labelledby="application-modal-title"
       aria-modal="true"
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-50 grid place-items-center p-3 sm:p-5"
       onKeyDown={handleKeyDown}
       role="dialog"
     >
       <button
-        aria-label="Close application drawer backdrop"
-        className="absolute inset-0 h-full w-full bg-slate-950/30"
+        aria-label="Close application modal backdrop"
+        className="absolute inset-0 h-full w-full bg-slate-950/40"
         disabled={isPending}
         onClick={onClose}
         type="button"
       />
-      <aside className="absolute right-0 top-0 flex h-full w-full max-w-[460px] flex-col overflow-y-auto bg-white p-4 shadow-2xl sm:w-[90vw] sm:p-5">
+      <section className="application-modal relative max-h-[92dvh] w-full max-w-5xl overflow-y-auto border-2 border-hyrd-navy bg-white p-4 shadow-2xl sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p aria-live="polite" className="min-h-5 text-sm text-emerald-700">
               {notice}
             </p>
             <h2
-              className="text-xl font-semibold text-hyrd-text"
-              id="application-drawer-title"
+              className="font-serif text-3xl font-semibold text-hyrd-navy"
+              id="application-modal-title"
             >
               {title}
             </h2>
           </div>
           <button
-            aria-label="Close application drawer"
-            className="grid h-9 w-9 place-items-center rounded-lg text-hyrd-muted hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+            aria-label="Close application modal"
+            className="grid h-9 w-9 place-items-center text-hyrd-muted hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
             disabled={isPending}
             onClick={onClose}
             ref={closeButtonRef}
@@ -426,13 +435,13 @@ export function ApplicationDrawer({
         {mode !== "create" && detailQuery.isLoading ? (
           <div className="mt-6 space-y-3">
             {[0, 1, 2, 3, 4].map((item) => (
-              <div className="h-12 animate-pulse rounded bg-slate-100" key={item} />
+              <div className="h-12 animate-pulse bg-slate-100" key={item} />
             ))}
           </div>
         ) : null}
 
         {mode !== "create" && detailQuery.error !== null ? (
-          <div className="mt-6 rounded-[12px] border border-rose-200 p-4">
+          <div className="mt-6 border border-rose-200 p-4">
             <h3 className="font-semibold text-hyrd-text">
               Application could not load
             </h3>
@@ -442,7 +451,7 @@ export function ApplicationDrawer({
                 : errorMessage(detailQuery.error)}
             </p>
             <button
-              className="mt-4 h-10 rounded-[10px] border border-hyrd-border px-4 text-sm font-semibold text-hyrd-text hover:bg-slate-50"
+              className="mt-4 h-10 border border-hyrd-border px-4 text-sm font-semibold text-hyrd-text hover:bg-slate-50"
               onClick={() => void detailQuery.refetch()}
               type="button"
             >
@@ -453,52 +462,80 @@ export function ApplicationDrawer({
 
         {mode === "view" && application !== undefined ? (
           <div className="mt-5">
-            <dl>
-              <DetailRow label="Role" value={application.position} />
-              <DetailRow label="Company" value={application.company} />
-              <DetailRow label="Status" value={statusLabels[application.status]} />
-              <DetailRow label="Location" value={application.location ?? "Not set"} />
-              <DetailRow
-                label="Job URL"
-                value={
-                  application.jobUrl ? (
-                    <a
-                      className="text-hyrd-gold-dark underline-offset-4 hover:underline"
-                      href={application.jobUrl}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      {application.jobUrl}
-                    </a>
-                  ) : (
-                    "Not set"
-                  )
-                }
-              />
-              <DetailRow
-                label="Applied date"
-                value={formatApplicationDate(application.appliedAt)}
-              />
-              <DetailRow label="Notes" value={application.notes ?? "Not set"} />
-              <DetailRow
-                label="Created"
-                value={formatApplicationDate(application.createdAt)}
-              />
-              <DetailRow
-                label="Last updated"
-                value={formatApplicationDate(application.updatedAt)}
-              />
-            </dl>
+            <div className="border border-hyrd-border p-4">
+              <div className="flex flex-col gap-3 border-b border-hyrd-border pb-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="break-words text-3xl font-bold uppercase leading-tight text-hyrd-navy">
+                    {application.position}
+                  </h3>
+                  <p className="mt-2 break-words font-serif text-xl font-light text-hyrd-text">
+                    {application.company}
+                  </p>
+                  <p className="mt-1 break-words font-serif text-base font-light text-hyrd-muted">
+                    {application.location ?? "Location not set"}
+                  </p>
+                </div>
+                <dl className="shrink-0">
+                  <DetailRow label="Status" value={statusLabels[application.status]} />
+                  <DetailRow
+                    label="Applied"
+                    value={formatApplicationDate(application.appliedAt)}
+                  />
+                </dl>
+              </div>
+              <div className="grid gap-5 pt-4 lg:grid-cols-[0.95fr_1.05fr]">
+                <section>
+                  <h4 className="font-serif text-xl font-semibold text-hyrd-navy">
+                    Application information
+                  </h4>
+                  <dl>
+                    <DetailRow
+                      label="Job URL"
+                      value={
+                        application.jobUrl ? (
+                          <a
+                            className="text-hyrd-gold-dark underline-offset-4 hover:underline"
+                            href={application.jobUrl}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
+                            {application.jobUrl}
+                          </a>
+                        ) : (
+                          "Not set"
+                        )
+                      }
+                    />
+                    <DetailRow
+                      label="Created"
+                      value={formatApplicationDate(application.createdAt)}
+                    />
+                    <DetailRow
+                      label="Last updated"
+                      value={formatApplicationDate(application.updatedAt)}
+                    />
+                  </dl>
+                </section>
+                <section>
+                  <h4 className="font-serif text-xl font-semibold text-hyrd-navy">
+                    Notes
+                  </h4>
+                  <dl>
+                    <DetailRow label="Notes" value={application.notes ?? "Not set"} />
+                  </dl>
+                </section>
+              </div>
+            </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="h-10 rounded-[10px] border border-rose-200 px-4 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                className="h-10 border border-rose-200 px-4 text-sm font-semibold uppercase tracking-[0.08em] text-rose-700 hover:bg-rose-50"
                 onClick={() => setMode("delete")}
                 type="button"
               >
                 Delete
               </button>
               <button
-                className="h-10 rounded-[10px] bg-hyrd-gold px-4 text-sm font-semibold text-white hover:bg-hyrd-gold-dark"
+                className="h-10 border border-hyrd-navy bg-hyrd-navy px-4 text-sm font-semibold uppercase tracking-[0.08em] text-white hover:bg-hyrd-deep focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
                 onClick={() => {
                   setForm(formFromApplication(application));
                   setMode("edit");
@@ -514,7 +551,7 @@ export function ApplicationDrawer({
         {mode === "edit" ? formContent : null}
 
         {mode === "delete" && application !== undefined ? (
-          <div className="mt-6 rounded-[12px] border border-rose-200 p-4">
+          <div className="mt-6 border border-rose-200 p-4">
             <h3 className="font-semibold text-hyrd-text">Confirm deletion</h3>
             <p className="mt-2 text-sm text-hyrd-muted">
               Delete {application.position} at {application.company}? This cannot
@@ -527,7 +564,7 @@ export function ApplicationDrawer({
             ) : null}
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="h-10 rounded-[10px] border border-hyrd-border px-4 text-sm font-semibold text-hyrd-text hover:bg-slate-50"
+                className="h-10 border border-hyrd-border px-4 text-sm font-semibold uppercase tracking-[0.08em] text-hyrd-text hover:bg-slate-50"
                 disabled={isPending}
                 onClick={() => setMode("view")}
                 type="button"
@@ -535,7 +572,7 @@ export function ApplicationDrawer({
                 Cancel
               </button>
               <button
-                className="h-10 rounded-[10px] bg-rose-700 px-4 text-sm font-semibold text-white hover:bg-rose-800 disabled:opacity-60"
+                className="h-10 bg-rose-700 px-4 text-sm font-semibold uppercase tracking-[0.08em] text-white hover:bg-rose-800 disabled:opacity-60"
                 disabled={isPending}
                 onClick={handleDelete}
                 type="button"
@@ -545,7 +582,7 @@ export function ApplicationDrawer({
             </div>
           </div>
         ) : null}
-      </aside>
+      </section>
     </div>
   );
 }

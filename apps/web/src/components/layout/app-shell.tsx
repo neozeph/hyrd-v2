@@ -17,7 +17,6 @@ const AppShellContext = createContext<AppShellContextValue | null>(null);
 const navItems = [
   { label: "Overview", icon: "overview", to: "/dashboard" },
   { label: "Applications", icon: "applications", to: "/applications" },
-  { label: "Analytics", icon: "analytics", to: "/analytics" },
   { label: "Settings", icon: "settings", to: "/settings" },
 ];
 
@@ -48,105 +47,122 @@ export function AppShell({ children }: AppShellProps) {
       value={{ openMobileNavigation: () => setIsMobileOpen(true) }}
     >
       <div className="min-h-screen overflow-x-hidden bg-hyrd-page text-hyrd-text">
-      {isMobileOpen ? (
-        <button
-          aria-label="Close navigation overlay"
-          className="fixed inset-0 z-40 bg-hyrd-deep/40 lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
-          type="button"
-        />
-      ) : null}
-
-      <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen flex-col overflow-y-auto bg-hyrd-navy text-white transition-[transform,width] duration-200 ${
-          isCollapsed ? "lg:w-[72px]" : "lg:w-64"
-        } ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"} w-64`}
-      >
-        <div className="flex items-center justify-between px-4 py-5">
-          <Link
-            className={`overflow-hidden font-semibold tracking-[0.14em] text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold ${
-              isCollapsed ? "lg:text-lg" : "text-xl"
-            }`}
-            to="/dashboard"
-          >
-            {isCollapsed ? "H" : "HYRD"}
-          </Link>
+        {isMobileOpen ? (
           <button
-            aria-label="Close navigation"
-            className="grid h-9 w-9 place-items-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:hidden"
+            aria-label="Close navigation overlay"
+            className="fixed inset-0 z-40 bg-hyrd-deep/40 lg:hidden"
             onClick={() => setIsMobileOpen(false)}
             type="button"
-          >
-            <Icon className="h-4 w-4" name="close" />
-          </button>
-          <button
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="hidden h-9 w-9 place-items-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:grid"
-            onClick={() => setIsCollapsed((current) => !current)}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            type="button"
-          >
-            <Icon
-              className={`h-4 w-4 transition ${isCollapsed ? "rotate-180" : ""}`}
-              name="chevron"
-            />
-          </button>
-        </div>
+          />
+        ) : null}
 
-        <nav aria-label="Dashboard" className="space-y-1 px-3">
-          {navItems.map((item) => (
-            <NavLink
-              className={({ isActive }) =>
-                `flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-hyrd-gold ${
-                  isActive
-                    ? "bg-white/10 text-white"
-                    : "text-slate-300 hover:bg-white/7 hover:text-white"
-                } ${isCollapsed ? "lg:justify-center" : ""}`
-              }
-              key={item.label}
-              onClick={() => setIsMobileOpen(false)}
-              title={isCollapsed ? item.label : undefined}
-              to={item.to}
+        <aside
+          className={`fixed left-0 top-0 z-50 flex h-screen flex-col overflow-y-auto bg-hyrd-navy text-white transition-[transform,width] duration-200 ${
+            isCollapsed ? "lg:w-[72px]" : "lg:w-64"
+          } ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"} w-64`}
+        >
+          <div className="flex items-center justify-between px-4 py-5">
+            <Link
+              aria-label="HYRD dashboard"
+              className={`flex min-h-10 items-center gap-3 overflow-hidden text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold ${
+                isCollapsed ? "lg:justify-center" : ""
+              }`}
+              to="/dashboard"
             >
-              <Icon className="h-4.5 w-4.5 shrink-0" name={item.icon} />
-              <span className={isCollapsed ? "lg:sr-only" : ""}>
-                {item.label}
+              <img
+                alt=""
+                aria-hidden="true"
+                className="h-9 w-9 shrink-0 object-contain"
+                height="36"
+                src="/brand/hyrd-mark.png.png"
+                width="36"
+              />
+              <span
+                className={`font-serif text-xl font-semibold tracking-[0.12em] ${
+                  isCollapsed ? "lg:sr-only" : ""
+                }`}
+              >
+                HYRD
               </span>
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="mt-auto border-t border-white/10 p-4">
-          <div
-            className={`flex items-center gap-3 ${
-              isCollapsed ? "lg:justify-center" : ""
-            }`}
-          >
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-sm font-semibold">
-              {initials || "H"}
-            </div>
-            <div className={isCollapsed ? "lg:sr-only" : ""}>
-              <p className="text-sm font-medium">{displayName}</p>
-              <p className="text-xs text-slate-300">Personal workspace</p>
-            </div>
+            </Link>
+            <button
+              aria-label="Close navigation"
+              className="grid h-9 w-9 place-items-center text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:hidden"
+              onClick={() => setIsMobileOpen(false)}
+              type="button"
+            >
+              <Icon className="h-4 w-4" name="close" />
+            </button>
+            <button
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="hidden h-9 w-9 place-items-center text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:grid"
+              onClick={() => setIsCollapsed((current) => !current)}
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              type="button"
+            >
+              <Icon
+                className={`h-4 w-4 transition ${isCollapsed ? "rotate-180" : ""}`}
+                name="chevron"
+              />
+            </button>
           </div>
-          <button
-            className={`mt-4 flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold ${
-              isCollapsed ? "w-full lg:justify-center" : "w-full"
-            }`}
-            title={isCollapsed ? "Logout" : undefined}
-            onClick={handleLogout}
-            type="button"
-          >
-            <Icon className="h-4 w-4" name="logout" />
-            <span className={isCollapsed ? "lg:sr-only" : ""}>Logout</span>
-          </button>
-        </div>
-      </aside>
 
-      <div className={`min-h-screen transition-[padding] duration-200 ${sidebarWidth}`}>
-        {children}
-      </div>
+          <nav aria-label="Dashboard" className="space-y-1 px-3">
+            {navItems.map((item) => (
+              <NavLink
+                className={({ isActive }) =>
+                  `flex min-h-11 items-center gap-3 border px-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-hyrd-gold ${
+                    isActive
+                      ? "border-white/30 bg-white/10 text-white"
+                      : "border-transparent text-slate-300 hover:border-white/14 hover:bg-white/7 hover:text-white"
+                  } ${isCollapsed ? "lg:justify-center" : ""}`
+                }
+                key={item.label}
+                onClick={() => setIsMobileOpen(false)}
+                title={isCollapsed ? item.label : undefined}
+                to={item.to}
+              >
+                <Icon className="h-4.5 w-4.5 shrink-0" name={item.icon} />
+                <span className={isCollapsed ? "lg:sr-only" : ""}>
+                  {item.label}
+                </span>
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="mt-auto border-t border-white/10 p-4">
+            <div
+              className={`flex items-center gap-3 ${
+                isCollapsed ? "lg:justify-center" : ""
+              }`}
+            >
+              <div className="grid h-9 w-9 place-items-center border border-white/15 bg-white/10 text-sm font-semibold">
+                {initials || "H"}
+              </div>
+              <div className={isCollapsed ? "lg:sr-only" : ""}>
+                <p className="text-sm font-medium">{displayName}</p>
+                <p className="text-xs text-slate-300">Personal workspace</p>
+              </div>
+            </div>
+            <button
+              className={`mt-4 flex min-h-10 items-center gap-3 border border-transparent px-3 text-sm text-slate-300 transition hover:border-white/14 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-hyrd-gold ${
+                isCollapsed ? "w-full lg:justify-center" : "w-full"
+              }`}
+              title={isCollapsed ? "Logout" : undefined}
+              onClick={handleLogout}
+              type="button"
+            >
+              <Icon className="h-4 w-4" name="logout" />
+              <span className={isCollapsed ? "lg:sr-only" : ""}>Logout</span>
+            </button>
+          </div>
+        </aside>
+
+        <div
+          className={`min-h-screen transition-[padding] duration-200 ${sidebarWidth}`}
+        >
+          {children}
+        </div>
       </div>
     </AppShellContext.Provider>
   );
@@ -164,14 +180,14 @@ export function PageHeader({
   return (
     <header className="border-b border-hyrd-border bg-white px-4 py-3 sm:px-7 sm:py-5 lg:px-7">
       <div className="flex min-w-0 items-center justify-between gap-3">
-        <h1 className="min-w-0 truncate text-2xl font-semibold text-hyrd-text">
+        <h1 className="min-w-0 truncate font-serif text-3xl font-semibold text-hyrd-navy">
           {title}
         </h1>
         <div className="flex shrink-0 items-center gap-2">
           {action}
           <button
             aria-label="Open navigation"
-            className="grid h-11 w-11 place-items-center rounded-lg border border-hyrd-border bg-white text-hyrd-text shadow-sm focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:hidden"
+            className="grid h-11 w-11 place-items-center border border-hyrd-border bg-white text-hyrd-text shadow-sm focus:outline-none focus:ring-2 focus:ring-hyrd-gold lg:hidden"
             onClick={context?.openMobileNavigation}
             title="Open navigation"
             type="button"

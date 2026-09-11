@@ -5,6 +5,7 @@ import { useAuth } from "../auth/use-auth";
 import { ApplicationDrawer } from "../components/applications/application-drawer";
 import { ApplicationCard } from "../components/applications/application-card";
 import { AppShell, PageHeader } from "../components/layout/app-shell";
+import { SignatureButton } from "../components/public/signature-cta";
 import { Icon } from "../components/ui/icons";
 import {
   useApplicationStatsQuery,
@@ -17,20 +18,23 @@ function DashboardSkeleton() {
     <>
       <section
         aria-label="Loading application summary"
-        className="grid grid-cols-2 gap-3 xl:grid-cols-4"
+        className="grid gap-3 lg:grid-cols-[1.8fr_1fr]"
       >
-        {[0, 1, 2, 3].map((item) => (
-          <div
-            className="h-[112px] animate-pulse rounded-[12px] border border-hyrd-border bg-white"
-            key={item}
-          />
-        ))}
+        <div className="h-[224px] animate-pulse border border-hyrd-border bg-white" />
+        <div className="grid gap-3">
+          {[0, 1, 2].map((item) => (
+            <div
+              className="h-[66px] animate-pulse border border-hyrd-border bg-white"
+              key={item}
+            />
+          ))}
+        </div>
       </section>
-      <section className="rounded-[14px] border border-hyrd-border bg-white p-4">
-        <div className="h-5 w-40 animate-pulse rounded bg-slate-100" />
+      <section className="border border-hyrd-border bg-white p-4">
+        <div className="h-5 w-40 animate-pulse bg-slate-100" />
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[0, 1, 2, 3].map((item) => (
-            <div className="h-[132px] animate-pulse rounded-[12px] bg-slate-100" key={item} />
+            <div className="h-[132px] animate-pulse bg-slate-100" key={item} />
           ))}
         </div>
       </section>
@@ -39,7 +43,7 @@ function DashboardSkeleton() {
 }
 
 export function DashboardPage() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
   const [drawerMode, setDrawerMode] = useState<"create" | "view">("view");
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(
@@ -68,6 +72,8 @@ export function DashboardPage() {
   const error = statsQuery.error ?? recentQuery.error;
   const stats = statsQuery.data;
   const recentApplications = recentQuery.data?.data ?? [];
+  const firstName = user?.name?.trim().split(/\s+/)[0];
+  const greeting = firstName ? `Welcome back, ${firstName}.` : "Welcome back.";
 
   function openCreateDrawer() {
     setDrawerMode("create");
@@ -92,25 +98,24 @@ export function DashboardPage() {
       <main className="min-w-0">
         <PageHeader
           action={
-            <button
+            <SignatureButton
               aria-label="Add application"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-[10px] bg-hyrd-gold text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55] sm:w-auto sm:gap-2 sm:px-4"
+              className="min-h-10 px-4 py-2 text-xs"
               onClick={openCreateDrawer}
               title="Add application"
               type="button"
             >
-              <Icon className="h-4 w-4" name="plus" />
-              <span className="sr-only sm:not-sr-only">Add application</span>
-            </button>
+              Add application
+            </SignatureButton>
           }
-          title="Overview"
+          title={greeting}
         />
 
         <div className="space-y-5 px-4 py-4 sm:px-7 sm:py-5">
           {isLoading ? <DashboardSkeleton /> : null}
 
           {!isLoading && error !== null ? (
-            <section className="rounded-[14px] border border-rose-200 bg-white p-6">
+            <section className="border border-rose-200 bg-white p-6">
               <h2 className="text-base font-semibold text-hyrd-text">
                 Applications could not load
               </h2>
@@ -118,7 +123,7 @@ export function DashboardPage() {
                 {error instanceof Error ? error.message : "Please try again."}
               </p>
               <button
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-[10px] border border-hyrd-border px-4 text-sm font-semibold text-hyrd-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+                className="mt-4 inline-flex h-10 items-center justify-center border border-hyrd-border px-4 text-sm font-semibold text-hyrd-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
                 onClick={() => {
                   void statsQuery.refetch();
                   void recentQuery.refetch();
@@ -134,31 +139,41 @@ export function DashboardPage() {
             <>
               <section
                 aria-label="Application summary"
-                className="grid grid-cols-2 gap-3 xl:grid-cols-4"
+                className="grid gap-3 lg:grid-cols-[1.8fr_1fr]"
               >
-                {[
-                  ["Total applications", stats.total, "All roles"],
-                  ["Active applications", stats.active, "Open pipeline"],
-                  ["Interviews", stats.interviews, "In progress"],
-                  ["Offers", stats.offers, "Decision stage"],
-                ].map(([label, value, detail]) => (
-                  <article
-                    className="rounded-[12px] border border-hyrd-border bg-white px-4 py-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
-                    key={label}
-                  >
-                    <p className="min-h-10 text-sm text-hyrd-muted sm:min-h-0">
-                      {label}
-                    </p>
-                    <p className="mt-1 text-2xl font-semibold text-hyrd-text">
-                      {value}
-                    </p>
-                    <p className="mt-1 text-xs text-hyrd-muted">{detail}</p>
-                  </article>
-                ))}
+                <article className="grid min-h-[220px] place-items-center border-2 border-hyrd-navy bg-white px-6 py-8 text-center">
+                  <p className="font-serif text-2xl font-semibold text-hyrd-navy">
+                    Active Applications
+                  </p>
+                  <p className="mt-3 text-7xl font-semibold leading-none text-hyrd-navy sm:text-8xl">
+                    {stats.active}
+                  </p>
+                  <p className="mt-3 text-sm text-hyrd-muted">Open pipeline</p>
+                </article>
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                  {[
+                    ["Total applications", stats.total, "All roles"],
+                    ["Interviews", stats.interviews, "In progress"],
+                    ["Offers", stats.offers, "Decision stage"],
+                  ].map(([label, value, detail]) => (
+                    <article
+                      className="border border-hyrd-border bg-white px-4 py-4 text-center"
+                      key={label}
+                    >
+                      <p className="font-serif text-base font-semibold text-hyrd-navy">
+                        {label}
+                      </p>
+                      <p className="mt-1 text-3xl font-semibold text-hyrd-text">
+                        {value}
+                      </p>
+                      <p className="mt-1 text-xs text-hyrd-muted">{detail}</p>
+                    </article>
+                  ))}
+                </div>
               </section>
 
               {stats.total === 0 ? (
-                <section className="rounded-[14px] border border-hyrd-border bg-white p-8 text-center">
+                <section className="border border-hyrd-border bg-white p-8 text-center">
                   <h2 className="text-base font-semibold text-hyrd-text">
                     No applications yet
                   </h2>
@@ -167,7 +182,7 @@ export function DashboardPage() {
                     totals and recent activity here.
                   </p>
                   <button
-                    className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-hyrd-gold px-4 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55]"
+                    className="mt-5 inline-flex h-10 items-center justify-center gap-2 bg-hyrd-gold px-4 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55]"
                     onClick={openCreateDrawer}
                     type="button"
                   >
@@ -176,10 +191,10 @@ export function DashboardPage() {
                   </button>
                 </section>
               ) : (
-                <section className="rounded-[14px] border border-hyrd-border bg-white p-4">
+                <section className="border border-hyrd-border bg-white p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-base font-semibold text-hyrd-text">
+                      <h2 className="font-serif text-2xl font-bold text-hyrd-navy">
                         Recent applications
                       </h2>
                       <p className="mt-1 text-sm text-hyrd-muted">

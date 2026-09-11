@@ -8,7 +8,6 @@ export function Icon({ className = "", name }: IconProps & { name: string }) {
   const paths: Record<string, ReactNode> = {
     overview: <path d="M4 13h6V4H4v9Zm10 7h6V4h-6v16ZM4 20h6v-5H4v5Z" />,
     applications: <path d="M7 7V5a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v2h3v14H4V7h3Zm2 0h6V5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v2Z" />,
-    analytics: <path d="M5 19V9h3v10H5Zm6 0V4h3v15h-3Zm6 0v-7h3v7h-3Z" />,
     settings: <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Zm8.6-3.5c0-.5-.1-.9-.2-1.4l2-1.5-2-3.4-2.4 1a8 8 0 0 0-2.4-1.4L15.3 3h-4l-.4 2.3A8 8 0 0 0 8.5 6.7l-2.2-1-2 3.4 1.9 1.5a7.3 7.3 0 0 0 0 2.8l-1.9 1.5 2 3.4 2.2-1c.7.6 1.5 1 2.4 1.4l.4 2.3h4l.4-2.3a8 8 0 0 0 2.4-1.4l2.3 1 2-3.4-2-1.5c.1-.5.2-.9.2-1.4Z" />,
     search: <path d="m20 20-4.2-4.2M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />,
     plus: <path d="M12 5v14M5 12h14" />,

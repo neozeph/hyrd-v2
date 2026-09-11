@@ -14,7 +14,7 @@ export function TableView({
   return (
     <section
       aria-label="Applications table"
-      className="overflow-hidden rounded-[14px] border border-hyrd-border bg-white"
+      className="overflow-hidden border border-hyrd-border bg-white"
     >
       <div className="overflow-x-auto">
         <table className="min-w-[760px] w-full text-left text-sm">
@@ -55,7 +55,7 @@ export function TableView({
                 <td className="px-4 py-4">
                   <button
                     aria-label={`View details for ${application.position}`}
-                    className="grid h-8 w-8 place-items-center rounded-lg text-hyrd-muted hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+                    className="grid h-8 w-8 place-items-center text-hyrd-muted hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
                     onClick={() => onOpen?.(application.id)}
                     type="button"
                   >

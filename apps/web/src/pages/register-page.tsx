@@ -1,16 +1,17 @@
 import { useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { useAuth } from "../auth/use-auth";
 import { AuthField } from "../components/auth/auth-field";
 import { AuthShell } from "../components/auth/auth-shell";
+import { SignatureButton } from "../components/public/signature-cta";
 import { ApiError } from "../lib/api-error";
 import { getPasswordStrength } from "../lib/password-strength";
 
 type RegisterErrors = Partial<
   Record<
-    "name" | "email" | "password" | "confirmPassword" | "form",
+    "name" | "email" | "password" | "confirmPassword" | "agreement" | "form",
     string | string[]
   >
 >;
@@ -81,16 +82,16 @@ function PasswordStrengthMeter({
       aria-valuemax={100}
       aria-valuemin={0}
       aria-valuenow={strength.score}
-      className="mt-2"
+      className="password-strength-meter"
       role="progressbar"
     >
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+      <div className="h-1.5 overflow-hidden bg-slate-200">
         <div
-          className="h-full rounded-full bg-hyrd-gold transition-[width]"
+          className="h-full bg-hyrd-gold transition-[width]"
           style={{ width: `${strength.score}%` }}
         />
       </div>
-      <p aria-live="polite" className="mt-1 text-xs text-hyrd-muted">
+      <p aria-live="polite" className="mt-0.5 text-xs text-hyrd-muted">
         Strength: <span className="font-medium text-hyrd-text">{strength.rating}</span>
       </p>
     </div>
@@ -108,6 +109,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<RegisterErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -138,13 +140,18 @@ export function RegisterPage() {
     } else if (password !== confirmPassword) {
       nextErrors.confirmPassword = "Passwords do not match.";
     }
+    if (!hasAcceptedTerms) {
+      nextErrors.agreement =
+        "Agree to the Terms & Conditions and acknowledge the Privacy Policy to continue.";
+    }
     setErrors(nextErrors);
 
     if (
       nextErrors.name ||
       nextErrors.email ||
       nextErrors.password ||
-      nextErrors.confirmPassword
+      nextErrors.confirmPassword ||
+      nextErrors.agreement
     ) {
       if (nextErrors.name) nameRef.current?.focus();
       else if (nextErrors.email) emailRef.current?.focus();
@@ -202,11 +209,11 @@ export function RegisterPage() {
   return (
     <AuthShell
       eyebrow="Start organized"
-      heading="Create your HYRD workspace"
-      intro="Set up a focused place for saved roles, active applications, interviews, and outcomes."
+      heading="Create your workspace"
+      intro="Start tracking roles under your HYRD account."
       mode="register"
     >
-      <form className="space-y-2.5" noValidate onSubmit={handleSubmit}>
+      <form className="auth-register-form" noValidate onSubmit={handleSubmit}>
         <AuthField
           autoComplete="name"
           compact
@@ -254,16 +261,55 @@ export function RegisterPage() {
           type="password"
           value={confirmPassword}
         />
+        <div className="auth-agreement-block">
+          <label className="auth-agreement text-sm text-hyrd-muted">
+            <input
+              aria-describedby="registration-agreement-error"
+              aria-invalid={Boolean(errors.agreement)}
+              checked={hasAcceptedTerms}
+              className="h-4 w-4 shrink-0 accent-hyrd-gold focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+              onChange={(event) => {
+                setHasAcceptedTerms(event.target.checked);
+                setErrors((currentErrors) => ({
+                  ...currentErrors,
+                  agreement: undefined,
+                  form: undefined,
+                }));
+              }}
+              type="checkbox"
+            />
+            <span>
+              I agree to the{" "}
+              <Link
+                className="font-semibold text-hyrd-gold-dark underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+                to="/terms"
+              >
+                Terms & Conditions
+              </Link>{" "}
+              and acknowledge the{" "}
+              <Link
+                className="font-semibold text-hyrd-gold-dark underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+                to="/privacy"
+              >
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+          <p
+            aria-live="polite"
+            className="mt-1 min-h-4 text-xs text-red-700"
+            id="registration-agreement-error"
+          >
+            {errors.agreement}
+          </p>
+        </div>
         <p aria-live="polite" className="min-h-3 text-sm text-hyrd-muted">
           {errors.form}
         </p>
-        <button
-          className="w-full rounded-[10px] bg-hyrd-gold px-4 py-2 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55] disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={isSubmitting}
-          type="submit"
-        >
-          {isSubmitting ? "Creating account..." : "Create account"}
-        </button>
+        <SignatureButton className="auth-signature-button w-full" disabled={isSubmitting} type="submit">
+          {isSubmitting ? "Creating..." : "Get HYRD"}
+        </SignatureButton>
       </form>
     </AuthShell>
   );
