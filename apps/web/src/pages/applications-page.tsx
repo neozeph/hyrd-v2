@@ -32,7 +32,7 @@ type PipelineTab = "all" | "closed" | ApplicationStatus;
 const pipelineTabs: PipelineTab[] = ["all", ...activeStatuses, "closed"];
 const pageSize = 6;
 const compactControlClass =
-  "h-10 border border-hyrd-border bg-white text-sm outline-none transition hover:border-slate-300 focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
+  "h-10 border border-hyrd-border bg-white text-sm outline-none transition hover:border-hyrd-navy/35 focus:border-hyrd-navy focus:ring-3 focus:ring-[#17233c24] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
 
 function tabLabel(tab: PipelineTab) {
   if (tab === "all") return "All";
@@ -284,8 +284,8 @@ export function ApplicationsPage() {
                       aria-selected={isActive}
                       className={`min-h-10 overflow-hidden border px-1.5 text-[12px] font-semibold leading-tight transition focus:outline-none focus:ring-2 focus:ring-inset focus:ring-hyrd-gold sm:px-2 lg:px-3 ${
                         isActive
-                          ? "border-hyrd-navy bg-hyrd-navy/5 text-hyrd-navy"
-                          : "border-transparent bg-white text-hyrd-muted hover:border-hyrd-border hover:text-hyrd-text"
+                          ? "border-hyrd-navy bg-hyrd-navy text-white"
+                          : "border-transparent bg-white text-hyrd-muted hover:border-hyrd-navy/35 hover:bg-hyrd-navy/5 hover:text-hyrd-navy"
                       }`}
                       key={tab}
                       onClick={() => {
@@ -296,7 +296,11 @@ export function ApplicationsPage() {
                       type="button"
                     >
                       {tabLabel(tab)}
-                      <span className="ml-1 text-[10px] text-hyrd-muted sm:ml-2 sm:text-xs">
+                      <span
+                        className={`ml-1 text-[10px] sm:ml-2 sm:text-xs ${
+                          isActive ? "text-white/75" : "text-hyrd-muted"
+                        }`}
+                      >
                         {tabCount(tab, statsQuery.data?.countsByStatus)}
                       </span>
                     </button>
@@ -309,7 +313,7 @@ export function ApplicationsPage() {
 
             {!isInitialLoading && error !== null ? (
               <section className="border border-rose-200 bg-white p-8 text-center">
-                <h2 className="text-base font-semibold text-hyrd-text">
+                <h2 className="font-serif text-xl font-semibold text-hyrd-navy">
                   Applications could not load
                 </h2>
                 <p className="mx-auto mt-2 max-w-md text-sm text-hyrd-muted">
@@ -330,7 +334,7 @@ export function ApplicationsPage() {
 
             {!isInitialLoading && error === null && total === 0 ? (
               <section className="border border-hyrd-border bg-white p-8 text-center">
-                <h2 className="text-base font-semibold text-hyrd-text">
+                <h2 className="font-serif text-xl font-semibold text-hyrd-navy">
                   {hasFilters ? "No applications match" : "No applications yet"}
                 </h2>
                 <p className="mx-auto mt-2 max-w-md text-sm text-hyrd-muted">
@@ -352,7 +356,7 @@ export function ApplicationsPage() {
                   </button>
                 ) : (
                   <button
-                    className="mt-5 inline-flex h-10 items-center justify-center gap-2 bg-hyrd-gold px-4 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark focus:outline-none focus:ring-3 focus:ring-[#b28a4a55]"
+                    className="mt-5 inline-flex h-10 items-center justify-center gap-2 bg-hyrd-gold px-4 text-sm font-semibold text-white transition hover:bg-hyrd-gold-dark active:translate-y-px focus:outline-none focus:ring-3 focus:ring-[#b28a4a55]"
                     onClick={openCreateDrawer}
                     type="button"
                   >
@@ -382,7 +386,7 @@ export function ApplicationsPage() {
                   <div className="flex items-center gap-2">
                     <button
                       aria-label="Previous page"
-                      className="grid h-9 w-9 place-items-center border border-hyrd-border font-medium text-hyrd-text transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="grid h-9 w-9 place-items-center border border-hyrd-border font-medium text-hyrd-text transition hover:border-hyrd-navy/35 hover:bg-slate-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={page <= 1}
                       onClick={() =>
                         setPage((currentPage) => Math.max(1, currentPage - 1))
@@ -393,7 +397,7 @@ export function ApplicationsPage() {
                     </button>
                     <button
                       aria-label="Next page"
-                      className="grid h-9 w-9 place-items-center border border-hyrd-border font-medium text-hyrd-text transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="grid h-9 w-9 place-items-center border border-hyrd-border font-medium text-hyrd-text transition hover:border-hyrd-navy/35 hover:bg-slate-50 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={pagination === undefined || page >= pagination.totalPages}
                       onClick={() => setPage((currentPage) => currentPage + 1)}
                       type="button"

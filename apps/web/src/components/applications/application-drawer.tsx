@@ -18,6 +18,7 @@ import type { ApplicationStatus, JobApplication } from "../../types/application"
 import { applicationStatuses } from "../../types/application";
 import { SignatureButton } from "../public/signature-cta";
 import { Icon } from "../ui/icons";
+import { StatusLabel } from "./status-label";
 
 type DrawerMode = "create" | "view" | "edit" | "delete";
 
@@ -41,10 +42,10 @@ const emptyForm: FormState = {
   status: "saved",
 };
 const fieldClass =
-  "mt-1 h-10 w-full border border-hyrd-border bg-white px-3 text-sm text-hyrd-text outline-none transition hover:border-slate-300 focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
+  "mt-1 h-10 w-full border border-hyrd-border bg-white px-3 text-sm text-hyrd-text outline-none transition hover:border-hyrd-navy/35 focus:border-hyrd-navy focus:ring-3 focus:ring-[#17233c24] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
 const selectClass = `${fieldClass} appearance-none pr-9`;
 const textareaClass =
-  "mt-1 min-h-24 w-full border border-hyrd-border bg-white px-3 py-2 text-sm text-hyrd-text outline-none transition hover:border-slate-300 focus:border-hyrd-gold focus:ring-3 focus:ring-[#b28a4a33] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
+  "mt-1 min-h-24 w-full border border-hyrd-border bg-white px-3 py-2 text-sm text-hyrd-text outline-none transition hover:border-hyrd-navy/35 focus:border-hyrd-navy focus:ring-3 focus:ring-[#17233c24] disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-hyrd-muted";
 const labelClass = "block text-sm font-medium text-hyrd-text";
 
 function formFromApplication(application: JobApplication): FormState {
@@ -203,6 +204,8 @@ export function ApplicationDrawer({
     if (mode === "delete") return "Delete application";
     return "Application details";
   }, [mode]);
+  const isFormMode = mode === "create" || mode === "edit";
+  const modalWidthClass = isFormMode ? "max-w-[620px]" : "max-w-[680px]";
 
   if (!isOpen) return null;
 
@@ -299,6 +302,15 @@ export function ApplicationDrawer({
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className={labelClass}>
+          Location
+          <input
+            className={fieldClass}
+            disabled={isPending}
+            onChange={(event) => setField("location", event.target.value)}
+            value={form.location}
+          />
+        </label>
+        <label className={labelClass}>
           Status
           <span className="relative block">
             <select
@@ -321,6 +333,8 @@ export function ApplicationDrawer({
             />
           </span>
         </label>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
         <label className={labelClass}>
           Applied date
           <input
@@ -329,17 +343,6 @@ export function ApplicationDrawer({
             onChange={(event) => setField("appliedDate", event.target.value)}
             type="date"
             value={form.appliedDate}
-          />
-        </label>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className={labelClass}>
-          Location
-          <input
-            className={fieldClass}
-            disabled={isPending}
-            onChange={(event) => setField("location", event.target.value)}
-            value={form.location}
           />
         </label>
         <label className={labelClass}>
@@ -366,9 +369,9 @@ export function ApplicationDrawer({
           {formError}
         </p>
       ) : null}
-      <div className="flex flex-col justify-end gap-2 sm:flex-row">
+      <div className="flex flex-col justify-end gap-2 border-t border-hyrd-border pt-3 sm:flex-row">
         <button
-          className="h-11 border border-hyrd-border px-4 text-sm font-semibold uppercase tracking-[0.08em] text-hyrd-text transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+          className="h-11 border border-hyrd-border px-4 text-sm font-semibold uppercase tracking-[0.08em] text-hyrd-text transition hover:border-hyrd-navy/35 hover:bg-slate-50 active:translate-y-px focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
           disabled={isPending}
           onClick={() => (mode === "create" ? onClose() : setMode("view"))}
           type="button"
@@ -400,13 +403,17 @@ export function ApplicationDrawer({
     >
       <button
         aria-label="Close application modal backdrop"
-        className="absolute inset-0 h-full w-full bg-slate-950/40"
+        className="absolute inset-0 h-full w-full bg-slate-950/55 transition-opacity"
         disabled={isPending}
         onClick={onClose}
         type="button"
       />
-      <section className="application-modal relative max-h-[92dvh] w-full max-w-5xl overflow-y-auto border-2 border-hyrd-navy bg-white p-4 shadow-2xl sm:p-5">
-        <div className="flex items-start justify-between gap-3">
+      <section
+        className={`application-modal relative max-h-[90dvh] w-full overflow-y-auto border-2 border-hyrd-navy bg-white p-4 shadow-2xl sm:p-5 ${
+          modalWidthClass
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3 border-b border-hyrd-border pb-3">
           <div>
             <p aria-live="polite" className="min-h-5 text-sm text-emerald-700">
               {notice}
@@ -420,7 +427,7 @@ export function ApplicationDrawer({
           </div>
           <button
             aria-label="Close application modal"
-            className="grid h-9 w-9 place-items-center text-hyrd-muted hover:bg-slate-100 hover:text-hyrd-text focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+            className="grid h-9 w-9 place-items-center text-hyrd-muted transition hover:bg-slate-100 hover:text-hyrd-text active:translate-y-px focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
             disabled={isPending}
             onClick={onClose}
             ref={closeButtonRef}
@@ -463,79 +470,58 @@ export function ApplicationDrawer({
         {mode === "view" && application !== undefined ? (
           <div className="mt-5">
             <div className="border border-hyrd-border p-4">
-              <div className="flex flex-col gap-3 border-b border-hyrd-border pb-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h3 className="break-words text-3xl font-bold uppercase leading-tight text-hyrd-navy">
-                    {application.position}
-                  </h3>
-                  <p className="mt-2 break-words font-serif text-xl font-light text-hyrd-text">
-                    {application.company}
-                  </p>
-                  <p className="mt-1 break-words font-serif text-base font-light text-hyrd-muted">
-                    {application.location ?? "Location not set"}
-                  </p>
-                </div>
-                <dl className="shrink-0">
-                  <DetailRow label="Status" value={statusLabels[application.status]} />
-                  <DetailRow
-                    label="Applied"
-                    value={formatApplicationDate(application.appliedAt)}
-                  />
-                </dl>
+              <div className="border-b border-hyrd-border pb-4">
+                <h3 className="break-words text-3xl font-bold uppercase leading-tight text-hyrd-navy">
+                  {application.position}
+                </h3>
+                <p className="mt-2 break-words font-serif text-xl font-light text-hyrd-text">
+                  {application.company}
+                </p>
+                <p className="mt-1 break-words font-serif text-base font-light text-hyrd-muted">
+                  {application.location ?? "Location not set"}
+                </p>
               </div>
-              <div className="grid gap-5 pt-4 lg:grid-cols-[0.95fr_1.05fr]">
-                <section>
-                  <h4 className="font-serif text-xl font-semibold text-hyrd-navy">
-                    Application information
-                  </h4>
-                  <dl>
-                    <DetailRow
-                      label="Job URL"
-                      value={
-                        application.jobUrl ? (
-                          <a
-                            className="text-hyrd-gold-dark underline-offset-4 hover:underline"
-                            href={application.jobUrl}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                          >
-                            {application.jobUrl}
-                          </a>
-                        ) : (
-                          "Not set"
-                        )
-                      }
-                    />
-                    <DetailRow
-                      label="Created"
-                      value={formatApplicationDate(application.createdAt)}
-                    />
-                    <DetailRow
-                      label="Last updated"
-                      value={formatApplicationDate(application.updatedAt)}
-                    />
-                  </dl>
-                </section>
-                <section>
-                  <h4 className="font-serif text-xl font-semibold text-hyrd-navy">
-                    Notes
-                  </h4>
-                  <dl>
-                    <DetailRow label="Notes" value={application.notes ?? "Not set"} />
-                  </dl>
-                </section>
-              </div>
+              <dl className="grid gap-x-4 pt-1 sm:grid-cols-2">
+                <DetailRow
+                  label="Status"
+                  value={<StatusLabel status={application.status} />}
+                />
+                <DetailRow
+                  label="Applied"
+                  value={formatApplicationDate(application.appliedAt)}
+                />
+              </dl>
+              <dl>
+                <DetailRow
+                  label="Job URL"
+                  value={
+                    application.jobUrl ? (
+                      <a
+                        className="break-words text-hyrd-gold-dark underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+                        href={application.jobUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        {application.jobUrl}
+                      </a>
+                    ) : (
+                      "Not set"
+                    )
+                  }
+                />
+                <DetailRow label="Notes" value={application.notes ?? "Not set"} />
+              </dl>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="h-10 border border-rose-200 px-4 text-sm font-semibold uppercase tracking-[0.08em] text-rose-700 hover:bg-rose-50"
+                className="h-10 border border-rose-200 px-4 text-sm font-semibold uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50 active:translate-y-px focus:outline-none focus:ring-2 focus:ring-rose-200"
                 onClick={() => setMode("delete")}
                 type="button"
               >
                 Delete
               </button>
-              <button
-                className="h-10 border border-hyrd-navy bg-hyrd-navy px-4 text-sm font-semibold uppercase tracking-[0.08em] text-white hover:bg-hyrd-deep focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+              <SignatureButton
+                className="min-h-10 px-4 py-2 text-xs"
                 onClick={() => {
                   setForm(formFromApplication(application));
                   setMode("edit");
@@ -543,7 +529,7 @@ export function ApplicationDrawer({
                 type="button"
               >
                 Edit
-              </button>
+              </SignatureButton>
             </div>
           </div>
         ) : null}
@@ -564,7 +550,7 @@ export function ApplicationDrawer({
             ) : null}
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="h-10 border border-hyrd-border px-4 text-sm font-semibold uppercase tracking-[0.08em] text-hyrd-text hover:bg-slate-50"
+                className="h-10 border border-hyrd-border px-4 text-sm font-semibold uppercase tracking-[0.08em] text-hyrd-text transition hover:border-hyrd-navy/35 hover:bg-slate-50 active:translate-y-px focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
                 disabled={isPending}
                 onClick={() => setMode("view")}
                 type="button"
@@ -572,7 +558,7 @@ export function ApplicationDrawer({
                 Cancel
               </button>
               <button
-                className="h-10 bg-rose-700 px-4 text-sm font-semibold uppercase tracking-[0.08em] text-white hover:bg-rose-800 disabled:opacity-60"
+                className="h-10 bg-rose-700 px-4 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-rose-800 active:translate-y-px focus:outline-none focus:ring-2 focus:ring-rose-200 disabled:opacity-60"
                 disabled={isPending}
                 onClick={handleDelete}
                 type="button"

@@ -56,7 +56,7 @@ export function AuthField({
           aria-describedby={describedBy || undefined}
           aria-invalid={errorMessages.length > 0}
           autoComplete={autoComplete}
-          className={`w-full border border-hyrd-border bg-[#fbfaf6] px-3.5 text-sm text-hyrd-text outline-none transition focus:border-hyrd-gold focus:bg-white focus:ring-3 focus:ring-[#b28a4a33] ${
+          className={`w-full border border-hyrd-border bg-[#fbfaf6] px-3.5 text-sm text-hyrd-text outline-none transition hover:border-hyrd-navy/35 focus:border-hyrd-navy focus:bg-white focus:ring-3 focus:ring-[#17233c24] ${
             compact ? "py-2" : "py-2.5"
           }`}
           id={id}

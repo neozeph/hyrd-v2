@@ -26,13 +26,13 @@ export function ApplicationCard({
 
   return (
     <article
-      className={`flex h-full min-h-[172px] flex-col border bg-white p-4 transition hover:-translate-y-0.5 hover:border-hyrd-navy focus-within:ring-2 focus-within:ring-hyrd-gold ${
+      className={`group flex h-full min-h-[172px] flex-col border bg-white p-4 transition hover:-translate-y-px hover:border-hyrd-navy hover:shadow-[0_8px_22px_rgba(16,26,46,0.1)] hover:ring-1 hover:ring-hyrd-navy/25 focus-within:ring-2 focus-within:ring-hyrd-gold ${
         isActive ? "border-hyrd-navy" : "border-hyrd-border"
       }`}
     >
       <div>
         <div className="flex items-start justify-between gap-3">
-          <h3 className="break-words text-xl font-bold uppercase leading-tight text-hyrd-navy">
+          <h3 className="break-words text-xl font-bold uppercase leading-tight text-hyrd-navy transition-colors group-hover:text-hyrd-deep">
             {application.position}
           </h3>
           {showStatus ? <StatusLabel status={application.status} /> : null}
@@ -50,7 +50,7 @@ export function ApplicationCard({
         </span>
         {onOpen ? (
           <button
-            className="inline-flex min-h-9 shrink-0 items-center justify-center bg-hyrd-navy px-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-hyrd-deep focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+            className="inline-flex min-h-9 shrink-0 items-center justify-center bg-hyrd-navy px-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-hyrd-deep active:translate-y-px focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
             onClick={() => onOpen(application.id)}
             type="button"
           >

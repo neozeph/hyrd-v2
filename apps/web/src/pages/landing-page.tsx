@@ -246,7 +246,7 @@ export function LandingPage() {
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-hyrd-gold">
                 Personal job-search system
               </p>
-              <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[1.02] text-white sm:text-6xl lg:text-7xl">
+              <h1 className="mt-5 max-w-3xl font-serif text-5xl font-semibold leading-[1.02] text-white sm:text-6xl lg:text-7xl">
                 Your job search deserves a system.
               </h1>
               <p className="mt-6 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">
