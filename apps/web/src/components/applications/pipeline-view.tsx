@@ -14,8 +14,13 @@ export function PipelineView({
 }: PipelineViewProps) {
   if (!applications.length) {
     return (
-      <section className="border border-hyrd-border bg-white p-8 text-center text-sm text-hyrd-muted">
-        No applications match the current filters.
+      <section className="border border-hyrd-border bg-white p-8 text-center">
+        <h2 className="font-serif text-xl font-semibold text-hyrd-navy">
+          No applications match
+        </h2>
+        <p className="mx-auto mt-2 max-w-md text-sm text-hyrd-muted">
+          Try a different search or status filter.
+        </p>
       </section>
     );
   }

@@ -38,31 +38,31 @@ export function AuthShell({
           <div
             className={`auth-content ${isRegister ? "auth-content-register" : ""}`}
           >
-            <div className="auth-brand-lockup">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-hyrd-gold-dark">
+              {eyebrow}
+            </p>
+            <div className="auth-title-row">
+              <h1 className="font-serif text-3xl leading-tight text-hyrd-text">
+                {heading}
+              </h1>
               <Link
                 aria-label="HYRD home"
-                className="inline-flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
+                className="auth-brand-lockup inline-flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-hyrd-gold"
                 to="/"
               >
                 <img
                   alt=""
                   aria-hidden="true"
-                  className="h-9 w-9 object-contain"
-                  height="36"
+                  className="h-7 w-7 object-contain"
+                  height="28"
                   src="/brand/hyrd-mark.png.png"
-                  width="36"
+                  width="28"
                 />
-                <span className="font-serif text-xl font-semibold tracking-[0.14em] text-hyrd-navy">
+                <span className="font-serif text-lg font-semibold tracking-[0.14em] text-hyrd-navy">
                   HYRD
                 </span>
               </Link>
             </div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-hyrd-gold-dark">
-              {eyebrow}
-            </p>
-            <h1 className="mt-2 font-serif text-3xl leading-tight text-hyrd-text">
-              {heading}
-            </h1>
             <p className="mt-2 text-sm leading-6 text-hyrd-muted">{intro}</p>
             <div className={isRegister ? "mt-2" : "mt-5"}>{children}</div>
             <p className="auth-switch-link text-sm text-hyrd-muted">
